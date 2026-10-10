@@ -18,7 +18,7 @@ const DEMO_CREDENTIALS = {
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard', 'workspace', 'problems', 'knowledge', 'settings'
+  const [currentTab, setCurrentTab] = useState('dashboard');
 
   useEffect(() => {
     const initAuth = async () => {
@@ -30,7 +30,6 @@ export default function App() {
       try {
         const me = await api.auth.me();
         setUser(me);
-        // Default tab based on role
         if (me.role === 'support_agent') {
           setCurrentTab('workspace');
         } else {
@@ -80,8 +79,8 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin"></div>
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
+        <div className="w-7 h-7 rounded-full border-2 border-zinc-900 dark:border-zinc-100 border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -91,7 +90,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-150">
       <Header
         user={user}
         currentTab={currentTab}
@@ -100,7 +99,7 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 overflow-x-hidden bg-zinc-950">
+      <main className="flex-1 overflow-x-hidden">
         {currentTab === 'dashboard' && <DirectorDashboard />}
         {currentTab === 'workspace' && <OperatorWorkspace user={user} />}
         {currentTab === 'problems' && <ProblemRegisterView user={user} />}
