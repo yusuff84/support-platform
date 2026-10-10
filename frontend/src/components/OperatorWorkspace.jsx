@@ -9,10 +9,14 @@ import {
   MessageCircle, 
   RefreshCw, 
   Check, 
-  Shield, 
-  HelpCircle,
-  Terminal,
-  Lock
+  ShieldCheck, 
+  ExternalLink,
+  ChevronRight,
+  User,
+  Smartphone,
+  Radio,
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 import { InstagramIcon } from './Icons';
 import { api } from '../api';
@@ -135,7 +139,7 @@ export default function OperatorWorkspace({ user }) {
       const updated = await api.tickets.updatePassport(selectedTicketId, passport);
       setSelectedTicket(updated);
       setPassportSavedNotice(true);
-      setTimeout(() => setPassportSavedNotice(false), 2000);
+      setTimeout(() => setPassportSavedNotice(false), 2500);
       await loadTickets();
     } catch (err) {
       console.error('Failed to save passport:', err);
@@ -192,45 +196,49 @@ export default function OperatorWorkspace({ user }) {
   };
 
   return (
-    <div className="h-[calc(100vh-53px)] flex flex-col md:flex-row overflow-hidden bg-zinc-950">
-      {/* COLUMN 1: Queue (Telegram + Instagram) */}
-      <div className="w-full md:w-80 lg:w-88 border-r border-zinc-800 flex flex-col bg-zinc-950 shrink-0">
-        <div className="p-3 border-b border-zinc-800 space-y-2">
+    <div className="h-[calc(100vh-61px)] flex flex-col md:flex-row overflow-hidden bg-slate-950">
+      {/* COLUMN 1: Inboxes & Dialogs (Telegram + Instagram) */}
+      <div className="w-full md:w-84 lg:w-92 border-r border-slate-800 flex flex-col bg-slate-900/40 shrink-0">
+        <div className="p-3.5 border-b border-slate-800 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider font-mono">
-              Очередь (TG + IG)
-            </span>
-            <span className="text-[10px] text-zinc-400 font-mono">
-              Всего: {tickets.length}
-            </span>
+            <h2 className="text-sm font-bold text-slate-100 tracking-tight">Обращения клиентов</h2>
+            <button
+              onClick={loadTickets}
+              className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+              title="Обновить список"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
 
+          {/* Search Box */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-zinc-500" />
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Поиск по номеру, имени, ID..."
+              placeholder="Поиск по имени, номеру, ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded pl-8 pr-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-700"
             />
           </div>
 
-          <div className="flex items-center space-x-1.5 text-xs">
+          {/* Quick Filters */}
+          <div className="flex items-center space-x-2 text-xs">
             <select
               value={channelFilter}
               onChange={(e) => setChannelFilter(e.target.value)}
-              className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-zinc-300 text-xs focus:outline-none focus:border-zinc-700 flex-1 font-mono"
+              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-300 text-xs focus:outline-none focus:border-slate-700 flex-1"
             >
               <option value="">Все каналы</option>
-              <option value="telegram">Telegram (@bot)</option>
-              <option value="instagram">Instagram Direct</option>
+              <option value="telegram">Telegram</option>
+              <option value="instagram">Instagram</option>
             </select>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-zinc-300 text-xs focus:outline-none focus:border-zinc-700 flex-1 font-mono"
+              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-300 text-xs focus:outline-none focus:border-slate-700 flex-1"
             >
               <option value="">Все статусы</option>
               <option value="new">Новые</option>
@@ -238,22 +246,14 @@ export default function OperatorWorkspace({ user }) {
               <option value="escalated">Эскалированы</option>
               <option value="resolved">Решенные</option>
             </select>
-
-            <button
-              onClick={loadTickets}
-              className="p-1 rounded bg-zinc-900 hover:bg-zinc-850 text-zinc-400 border border-zinc-800"
-              title="Обновить список"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
 
-        {/* Tickets Scroll List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-zinc-900">
+        {/* Dialog List */}
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-850">
           {tickets.length === 0 ? (
-            <div className="p-6 text-center text-xs text-zinc-400 font-mono">
-              Обращений не найдено
+            <div className="p-8 text-center text-xs text-slate-400">
+              Нет диалогов по заданным фильтрам
             </div>
           ) : (
             tickets.map((t) => {
@@ -262,50 +262,50 @@ export default function OperatorWorkspace({ user }) {
                 <div
                   key={t.id}
                   onClick={() => setSelectedTicketId(t.id)}
-                  className={`p-3 cursor-pointer transition-colors ${
-                    isSelected ? 'bg-zinc-900 border-l-2 border-zinc-200' : 'hover:bg-zinc-900/40'
+                  className={`p-3.5 cursor-pointer transition-all ${
+                    isSelected ? 'bg-slate-800/80 border-l-4 border-slate-300' : 'hover:bg-slate-850/50'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center space-x-1.5">
-                      {t.channel === 'telegram' ? (
-                        <span className="p-0.5 rounded text-zinc-400" title="Telegram">
-                          <MessageCircle className="w-3.5 h-3.5" />
-                        </span>
-                      ) : (
-                        <span className="p-0.5 rounded text-zinc-400" title="Instagram">
-                          <InstagramIcon className="w-3.5 h-3.5" />
-                        </span>
-                      )}
-                      <span className="font-semibold text-xs text-zinc-200 truncate max-w-[130px]">
+                  <div className="flex items-start justify-between mb-1.5">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                        {t.channel === 'telegram' ? (
+                          <MessageCircle className="w-3.5 h-3.5 text-slate-300" />
+                        ) : (
+                          <InstagramIcon className="w-3.5 h-3.5 text-slate-300" />
+                        )}
+                      </div>
+                      <span className="font-semibold text-xs text-white truncate max-w-[130px]">
                         {t.channel_user_name || t.channel_user_id}
                       </span>
                     </div>
 
-                    <div className="flex items-center space-x-1.5 font-mono text-[10px]">
-                      <span className={`px-1.5 py-0.2 rounded font-bold ${
-                        t.severity === 'P0' ? 'bg-zinc-100 text-zinc-950 font-bold' :
-                        t.severity === 'P1' ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' :
-                        'bg-zinc-900 text-zinc-400'
+                    <div className="flex items-center space-x-1.5">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                        t.severity === 'P0' ? 'bg-rose-950 text-rose-300 border border-rose-800' :
+                        t.severity === 'P1' ? 'bg-slate-800 text-rose-300 border border-slate-700' :
+                        'bg-slate-850 text-slate-400'
                       }`}>
                         {t.severity}
                       </span>
-                      <span className={t.status === 'new' ? 'text-zinc-100 font-bold underline' : 'text-zinc-400'}>
-                        {t.status}
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        t.status === 'new' ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60' :
+                        t.status === 'in_progress' ? 'bg-slate-800 text-slate-200' :
+                        'text-slate-500'
+                      }`}>
+                        {t.status === 'new' ? 'Новый' : t.status === 'in_progress' ? 'В работе' : t.status}
                       </span>
                     </div>
                   </div>
 
-                  <div className="text-[11px] text-zinc-300 line-clamp-1 mb-1">
-                    {t.category ? (
-                      <span className="text-zinc-400 font-medium">{t.category}: </span>
-                    ) : null}
+                  <div className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-1.5">
+                    {t.category && <strong className="text-slate-200">{t.category}: </strong>}
                     {t.problem || t.last_message || 'Без описания'}
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
                     <span>{t.ticket_number}</span>
-                    <span>{t.device || 'Платформа не указана'}</span>
+                    <span>{t.device || 'Не указано'} • {t.operator || 'Сеть?'}</span>
                   </div>
                 </div>
               );
@@ -314,85 +314,56 @@ export default function OperatorWorkspace({ user }) {
         </div>
       </div>
 
-      {/* COLUMN 2: Dialogue & Quick Actions */}
-      <div className="flex-1 flex flex-col border-r border-zinc-800 bg-zinc-950 min-w-0">
+      {/* COLUMN 2: Chat Stream & Message Composer */}
+      <div className="flex-1 flex flex-col border-r border-slate-800 bg-slate-950 min-w-0">
         {selectedTicket ? (
           <>
-            {/* Header */}
-            <div className="p-3 border-b border-zinc-800 flex items-center justify-between bg-zinc-950">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-7 h-7 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs font-bold font-mono text-zinc-300">
+            {/* Customer Chat Header */}
+            <div className="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sm text-slate-200">
                   {selectedTicket.channel_user_name?.charAt(0) || 'U'}
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-semibold text-xs text-zinc-100">{selectedTicket.channel_user_name}</span>
-                    <span className="text-[10px] text-zinc-400 font-mono">{selectedTicket.channel_user_handle}</span>
-                    <span className="text-[10px] px-1 py-0.2 rounded bg-zinc-900 text-zinc-400 border border-zinc-800 font-mono">
+                    <span className="font-bold text-sm text-white">{selectedTicket.channel_user_name}</span>
+                    <span className="text-xs text-slate-400 font-mono">{selectedTicket.channel_user_handle}</span>
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">
                       ID: {selectedTicket.channel_user_id}
                     </span>
                   </div>
-                  <div className="text-[10px] text-zinc-400 flex items-center space-x-2 font-mono">
-                    <span>Канал: <strong className="text-zinc-300 capitalize">{selectedTicket.channel}</strong></span>
+                  <div className="text-[11px] text-slate-400 flex items-center space-x-2 mt-0.5">
+                    <span>Канал: <strong className="text-slate-200 capitalize">{selectedTicket.channel}</strong></span>
                     <span>•</span>
-                    <span>Тикет: <strong className="text-zinc-300">{selectedTicket.ticket_number}</strong></span>
+                    <span>Тикет: <strong className="text-slate-200 font-mono">{selectedTicket.ticket_number}</strong></span>
                   </div>
                 </div>
               </div>
 
-              {/* Fast Action Buttons - Pure Monochrome */}
-              <div className="flex items-center space-x-1.5">
+              {/* Fast Action Buttons in Chat Header */}
+              <div className="flex items-center space-x-2">
                 <button
                   onClick={handleSendKey}
-                  className="flex items-center space-x-1 px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-850 text-zinc-200 border border-zinc-800 text-xs font-medium transition-colors"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 text-xs font-semibold transition-colors shadow-sm"
                   title="Отправить действующий ключ абоненту в чат"
                 >
-                  <Key className="w-3 h-3 text-zinc-400" />
+                  <Key className="w-3.5 h-3.5 text-slate-300" />
                   <span>Отправить ключ</span>
                 </button>
 
-                <div className="relative group">
-                  <button
-                    className="flex items-center space-x-1 px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-850 text-zinc-300 border border-zinc-800 text-xs font-medium transition-colors"
-                  >
-                    <FileText className="w-3 h-3 text-zinc-400" />
-                    <span>Инструкция</span>
-                  </button>
-                  <div className="absolute right-0 mt-1 hidden group-hover:flex flex-col bg-zinc-900 border border-zinc-800 rounded shadow-2xl py-1 z-30 min-w-[130px]">
-                    <button
-                      onClick={() => handleSendGuide('iPhone')}
-                      className="px-3 py-1 text-left text-xs text-zinc-300 hover:bg-zinc-800 font-mono"
-                    >
-                      iOS (iPhone)
-                    </button>
-                    <button
-                      onClick={() => handleSendGuide('Android')}
-                      className="px-3 py-1 text-left text-xs text-zinc-300 hover:bg-zinc-800 font-mono"
-                    >
-                      Android
-                    </button>
-                    <button
-                      onClick={() => handleSendGuide('Windows')}
-                      className="px-3 py-1 text-left text-xs text-zinc-300 hover:bg-zinc-800 font-mono"
-                    >
-                      Windows
-                    </button>
-                  </div>
-                </div>
-
                 <button
                   onClick={handleRecreateKey}
-                  className="flex items-center space-x-1 px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-850 text-zinc-200 border border-zinc-800 text-xs font-medium transition-colors"
-                  title="Сбросить и перевыпустить ключ на новом сервере"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 text-xs font-semibold transition-colors shadow-sm"
+                  title="Сбросить и выпустить ключ на протоколе Vless-Reality"
                 >
-                  <RefreshCw className="w-3 h-3 text-zinc-400" />
+                  <RefreshCw className="w-3.5 h-3.5 text-slate-300" />
                   <span>Пересоздать ключ</span>
                 </button>
               </div>
             </div>
 
-            {/* Message Stream */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-950">
+            {/* Chat Message Stream */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-950">
               {messages.map((m) => {
                 const isClient = m.sender_type === 'client';
                 const isAI = m.sender_type === 'ai';
@@ -401,20 +372,20 @@ export default function OperatorWorkspace({ user }) {
                     key={m.id}
                     className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
                   >
-                    <div className="flex items-center space-x-1.5 text-[10px] text-zinc-400 mb-1 px-1 font-mono">
-                      {isAI && <Bot className="w-3 h-3 text-zinc-400" />}
-                      <span>{m.sender_name || m.sender_type}</span>
+                    <div className="flex items-center space-x-2 text-[11px] text-slate-400 mb-1 px-1">
+                      {isAI && <Bot className="w-3.5 h-3.5 text-slate-400" />}
+                      <span className="font-semibold text-slate-300">{m.sender_name || m.sender_type}</span>
                       <span>•</span>
                       <span>{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
 
                     <div
-                      className={`max-w-[85%] rounded px-3.5 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
+                      className={`max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap ${
                         isClient
-                          ? 'bg-zinc-900 border border-zinc-800 text-zinc-200'
+                          ? 'bg-slate-900 border border-slate-800 text-slate-100'
                           : isAI
-                          ? 'bg-zinc-900 border border-zinc-750 text-zinc-200'
-                          : 'bg-zinc-800 border border-zinc-700 text-zinc-100 font-medium'
+                          ? 'bg-slate-850 border border-slate-750 text-slate-100 shadow-sm'
+                          : 'bg-slate-800 border border-slate-700 text-white font-medium shadow-sm'
                       }`}
                     >
                       {m.message_text}
@@ -424,125 +395,142 @@ export default function OperatorWorkspace({ user }) {
               })}
             </div>
 
-            {/* AI Suggestion Box */}
+            {/* AI Suggested Response Card */}
             {aiSuggestion && (
-              <div className="mx-4 mb-2 p-3 rounded bg-zinc-900 border border-zinc-800 text-xs space-y-2">
-                <div className="flex items-center justify-between pb-1.5 border-b border-zinc-800">
-                  <div className="flex items-center space-x-1.5 text-zinc-300 font-medium">
-                    <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>ИИ Copilot ({aiSuggestion.model_used})</span>
+              <div className="mx-4 mb-2 p-3.5 rounded-xl bg-slate-900 border border-slate-750 text-xs space-y-2 shadow-lg">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <div className="flex items-center space-x-2 text-slate-200 font-semibold">
+                    <Sparkles className="w-4 h-4 text-slate-300" />
+                    <span>Подсказка от ИИ ({aiSuggestion.model_used})</span>
                   </div>
                   <button
                     onClick={() => setMessageText(aiSuggestion.suggested_reply)}
-                    className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-[11px] font-medium transition-colors"
+                    className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-650 text-xs font-semibold transition-colors shadow-sm"
                   >
-                    Вставить в поле ввода
+                    Вставить в чат
                   </button>
                 </div>
-                <div className="text-zinc-300 font-mono text-[11px] leading-relaxed line-clamp-3">
+                <div className="text-slate-300 font-mono text-[11px] leading-relaxed line-clamp-3">
                   {aiSuggestion.suggested_reply}
                 </div>
               </div>
             )}
 
+            {/* Quick Template Chips Toolbar */}
+            <div className="px-4 py-2 border-t border-slate-850 bg-slate-900/30 flex items-center space-x-2 overflow-x-auto text-xs">
+              <span className="text-[11px] text-slate-400 shrink-0 font-medium">Шаблоны:</span>
+              <button
+                type="button"
+                onClick={() => handleSendGuide('iPhone')}
+                className="px-2.5 py-1 rounded bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-750 shrink-0 transition-colors"
+              >
+                📱 Гайд iOS
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendGuide('Android')}
+                className="px-2.5 py-1 rounded bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-750 shrink-0 transition-colors"
+              >
+                🤖 Гайд Android
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendGuide('Windows')}
+                className="px-2.5 py-1 rounded bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-750 shrink-0 transition-colors"
+              >
+                💻 Гайд Windows
+              </button>
+              <button
+                type="button"
+                onClick={handleAiSuggest}
+                disabled={aiLoading}
+                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 font-medium shrink-0 flex items-center space-x-1 transition-colors"
+              >
+                <Sparkles className="w-3 h-3 text-slate-300" />
+                <span>Сгенерировать ответ ИИ</span>
+              </button>
+            </div>
+
             {/* Message Input Box */}
-            <form onSubmit={handleSendMessage} className="p-3 border-t border-zinc-800 bg-zinc-950 flex items-center space-x-2">
+            <form onSubmit={handleSendMessage} className="p-3.5 border-t border-slate-800 bg-slate-900/60 flex items-center space-x-2.5">
               <input
                 type="text"
-                placeholder="Напишите ответ клиенту (отправится в Telegram или Instagram)..."
+                placeholder="Напишите ответ клиенту (отправится в диалог Telegram или Instagram)..."
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-slate-650"
               />
               <button
                 type="submit"
                 disabled={sendingMsg || !messageText.trim()}
-                className="px-3.5 py-2 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-100 font-medium text-xs flex items-center space-x-1.5 border border-zinc-700 transition-colors"
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-semibold text-xs flex items-center space-x-2 border border-slate-700 transition-colors shadow-md"
               >
-                <Send className="w-3.5 h-3.5 text-zinc-400" />
+                <Send className="w-4 h-4 text-slate-300" />
                 <span>Отправить</span>
               </button>
             </form>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-zinc-400 text-xs font-mono">
-            Выберите обращение в списке слева
+          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+            Выберите диалог из списка слева
           </div>
         )}
       </div>
 
-      {/* COLUMN 3: Ticket Passport (7 Fields) + VPN Inspector */}
-      <div className="w-full md:w-80 lg:w-88 border-l border-zinc-800 overflow-y-auto bg-zinc-950 p-4 space-y-4 shrink-0">
+      {/* COLUMN 3: CRM Ticket Passport & Technical Info */}
+      <div className="w-full md:w-84 lg:w-92 border-l border-slate-800 overflow-y-auto bg-slate-950 p-4 space-y-4 shrink-0">
         {selectedTicket ? (
           <>
-            {/* Header & Justification */}
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-              <div className="flex flex-col">
-                <span className="font-bold text-xs uppercase tracking-wide text-zinc-200 font-mono">
-                  Паспорт обращения
-                </span>
-                <span className="text-[10px] text-zinc-400">7 обязательных полей для продуктовой аналитики</span>
+            {/* Passport Header with Save Button */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div>
+                <h3 className="font-bold text-xs uppercase tracking-wider text-white">Паспорт тикета (7 полей)</h3>
+                <span className="text-[11px] text-slate-400">Данные для продуктовой аналитики</span>
               </div>
               <button
                 onClick={handleSavePassport}
                 disabled={savingPassport}
-                className="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-100 text-xs font-semibold flex items-center space-x-1 transition-colors"
+                className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold flex items-center space-x-1.5 transition-colors shadow-sm"
               >
-                {passportSavedNotice ? <Check className="w-3 h-3 text-zinc-200" /> : null}
-                <span>{passportSavedNotice ? 'Сохранено' : 'Сохранить'}</span>
+                {passportSavedNotice ? <Check className="w-4 h-4 text-emerald-400" /> : null}
+                <span>{passportSavedNotice ? 'Сохранено!' : 'Сохранить'}</span>
               </button>
             </div>
 
-            {/* AI Copilot & Triage buttons */}
-            <div className="bg-zinc-900/60 border border-zinc-800 rounded p-3 space-y-2">
-              <div className="flex items-center justify-between text-xs font-medium text-zinc-300">
-                <span className="flex items-center space-x-1">
-                  <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>ИИ Ассистент (OpenRouter Pool)</span>
+            {/* AI Auto-Triage Quick Action */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
+                <span className="flex items-center space-x-1.5">
+                  <Bot className="w-4 h-4 text-slate-400" />
+                  <span>AI Триаж паспорта</span>
                 </span>
-                <span className="text-[10px] text-zinc-400 font-mono">Авто-failover</span>
-              </div>
-
-              {selectedTicket.ai_diagnostic_summary && (
-                <div className="text-[11px] text-zinc-300 bg-zinc-950 p-2 rounded border border-zinc-800">
-                  <span className="font-semibold text-zinc-400">Диагноз ИИ: </span>
-                  {selectedTicket.ai_diagnostic_summary}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2 pt-0.5">
                 <button
                   type="button"
                   onClick={handleAiTriage}
                   disabled={aiLoading}
-                  className="px-2 py-1 rounded bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-[11px] font-medium text-zinc-300 flex items-center justify-center space-x-1 transition-colors"
-                  title="Автоматически заполнить паспорт тикета через анализ текста переписки нейросетью"
+                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-750 text-[11px] font-semibold text-slate-200 border border-slate-700 transition-colors"
                 >
-                  <Bot className="w-3 h-3 text-zinc-400" />
-                  <span>AI Триаж</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleAiSuggest}
-                  disabled={aiLoading}
-                  className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-[11px] font-medium text-zinc-200 flex items-center justify-center space-x-1 transition-colors"
-                  title="Сгенерировать готовый профессиональный ответ клиенту по базе знаний"
-                >
-                  <Sparkles className="w-3 h-3 text-zinc-400" />
-                  <span>Ответ от ИИ</span>
+                  Заполнить по переписке
                 </button>
               </div>
+
+              {selectedTicket.ai_diagnostic_summary && (
+                <div className="text-xs text-slate-300 bg-slate-950 p-2.5 rounded-lg border border-slate-800 leading-relaxed">
+                  <span className="font-bold text-slate-200">Диагноз ИИ: </span>
+                  {selectedTicket.ai_diagnostic_summary}
+                </div>
+              )}
             </div>
 
-            {/* Passport Fields */}
-            <div className="space-y-3 text-xs">
+            {/* Passport Form Fields */}
+            <div className="space-y-3.5 text-xs">
+              {/* Category & Subcategory */}
               <div className="space-y-1">
-                <label className="text-zinc-400 font-medium">Категория (Level 1)</label>
+                <label className="text-slate-300 font-semibold">1. Категория проблемы</label>
                 <select
                   value={passport.category || ''}
                   onChange={(e) => setPassport({ ...passport, category: e.target.value, subcategory: '' })}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-700"
                 >
                   <option value="">-- Выберите категорию --</option>
                   {taxonomy && Object.keys(taxonomy.categories).map((cat) => (
@@ -553,11 +541,11 @@ export default function OperatorWorkspace({ user }) {
 
               {passport.category && taxonomy?.categories[passport.category] && (
                 <div className="space-y-1">
-                  <label className="text-zinc-400 font-medium">Подкатегория</label>
+                  <label className="text-slate-300 font-semibold">Подкатегория</label>
                   <select
                     value={passport.subcategory || ''}
                     onChange={(e) => setPassport({ ...passport, subcategory: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-700"
                   >
                     <option value="">-- Подкатегория --</option>
                     {taxonomy.categories[passport.category].map((sub) => (
@@ -567,14 +555,14 @@ export default function OperatorWorkspace({ user }) {
                 </div>
               )}
 
-              {/* 7 Fields Grid */}
-              <div className="grid grid-cols-2 gap-2">
+              {/* Device & Operator */}
+              <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1">
-                  <label className="text-zinc-400 font-medium">Устройство</label>
+                  <label className="text-slate-300 font-semibold">2. Устройство</label>
                   <select
                     value={passport.device || ''}
                     onChange={(e) => setPassport({ ...passport, device: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-slate-700"
                   >
                     <option value="">-- Платформа --</option>
                     {taxonomy?.devices.map((d) => (
@@ -584,11 +572,11 @@ export default function OperatorWorkspace({ user }) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-zinc-400 font-medium">Оператор связи</label>
+                  <label className="text-slate-300 font-semibold">3. Оператор</label>
                   <select
                     value={passport.operator || ''}
                     onChange={(e) => setPassport({ ...passport, operator: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-slate-700"
                   >
                     <option value="">-- Оператор --</option>
                     {taxonomy?.operators.map((o) => (
@@ -598,13 +586,14 @@ export default function OperatorWorkspace({ user }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              {/* App & Severity */}
+              <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1">
-                  <label className="text-zinc-400 font-medium">Приложение</label>
+                  <label className="text-slate-300 font-semibold">4. Приложение</label>
                   <select
                     value={passport.app || ''}
                     onChange={(e) => setPassport({ ...passport, app: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-slate-700"
                   >
                     <option value="">-- Приложение --</option>
                     {taxonomy?.apps.map((a) => (
@@ -614,125 +603,129 @@ export default function OperatorWorkspace({ user }) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-zinc-400 font-medium">Критичность</label>
+                  <label className="text-slate-300 font-semibold">Критичность</label>
                   <select
                     value={passport.severity || 'P2'}
                     onChange={(e) => setPassport({ ...passport, severity: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-slate-700 font-mono"
                   >
                     <option value="P0">P0 (Авария сервиса)</option>
                     <option value="P1">P1 (Критичная индив.)</option>
-                    <option value="P2">P2 (Стандарт)</option>
-                    <option value="P3">P3 (Вопрос / Инструкция)</option>
+                    <option value="P2">P2 (Стандартная)</option>
+                    <option value="P3">P3 (Инструкция / FAQ)</option>
                   </select>
                 </div>
               </div>
 
+              {/* Problem / Symptom */}
               <div className="space-y-1">
-                <label className="text-zinc-400 font-medium">Проблема (Симптом)</label>
+                <label className="text-slate-300 font-semibold">5. Проблема (Симптом)</label>
                 <input
                   type="text"
                   value={passport.problem || ''}
                   onChange={(e) => setPassport({ ...passport, problem: e.target.value })}
-                  placeholder="Суть неполадки..."
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700"
+                  placeholder="Суть жалобы абонента..."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-700"
                 />
               </div>
 
+              {/* Root Cause */}
               <div className="space-y-1">
-                <label className="text-zinc-400 font-medium">Причина (Root Cause)</label>
+                <label className="text-slate-300 font-semibold">6. Причина (Root Cause)</label>
                 <input
                   type="text"
                   value={passport.cause || ''}
                   onChange={(e) => setPassport({ ...passport, cause: e.target.value })}
                   placeholder="Блокировка оператора, сбой сервера..."
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-700"
                 />
               </div>
 
+              {/* Resolution Result */}
               <div className="space-y-1">
-                <label className="text-zinc-400 font-medium">Результат (Resolution)</label>
+                <label className="text-slate-300 font-semibold">7. Результат решения</label>
                 <input
                   type="text"
                   value={passport.result || ''}
                   onChange={(e) => setPassport({ ...passport, result: e.target.value })}
-                  placeholder="Решено сменой протокола..."
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700"
+                  placeholder="Решено сменой протокола / сервера..."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-700"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              {/* Status and Instruction helped */}
+              <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1">
-                  <label className="text-zinc-400 font-medium">Статус тикета</label>
+                  <label className="text-slate-300 font-semibold">Статус тикета</label>
                   <select
                     value={passport.status || 'new'}
                     onChange={(e) => setPassport({ ...passport, status: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono font-medium"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-slate-700 font-semibold"
                   >
                     <option value="new">Новый</option>
                     <option value="in_progress">В работе</option>
-                    <option value="escalated">Эскалирован</option>
+                    <option value="escalated">Эскалирован L2</option>
                     <option value="resolved">Решен</option>
                     <option value="closed">Закрыт</option>
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-zinc-400 font-medium">Помог ли гайд</label>
+                  <label className="text-slate-300 font-semibold">Инструкция помогла</label>
                   <select
                     value={passport.instruction_helped === true ? '1' : passport.instruction_helped === false ? '0' : ''}
                     onChange={(e) => setPassport({ 
                       ...passport, 
                       instruction_helped: e.target.value === '1' ? true : e.target.value === '0' ? false : null 
                     })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-700 font-mono"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-slate-700"
                   >
                     <option value="">Неизвестно</option>
-                    <option value="1">Да</option>
+                    <option value="1">Да (Помогла)</option>
                     <option value="0">Нет</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* VPN Client Keys Card */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded p-3 space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
-                <span className="flex items-center space-x-1">
-                  <Key className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>Действующие ключи VPN</span>
+            {/* VPN Key Inspector Card */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-200">
+                <span className="flex items-center space-x-1.5">
+                  <Key className="w-4 h-4 text-slate-300" />
+                  <span>Активные ключи VPN</span>
                 </span>
-                <span className="text-[10px] text-zinc-400 font-mono">databasetop</span>
+                <span className="text-[10px] text-slate-400 font-mono">databasetop</span>
               </div>
 
               {vpnKeys.length > 0 ? (
                 vpnKeys.map((k) => (
-                  <div key={k.id} className="bg-zinc-950 p-2.5 rounded border border-zinc-850 space-y-1 text-[11px]">
+                  <div key={k.id} className="bg-slate-950 p-3 rounded-lg border border-slate-850 space-y-1.5 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-zinc-200 font-mono">{k.server} • {k.protocol}</span>
-                      <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-750 text-zinc-300 text-[10px] font-mono">
+                      <span className="font-bold text-white font-mono">{k.server} • {k.protocol}</span>
+                      <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-mono">
                         {k.subscription_status}
                       </span>
                     </div>
-                    <div className="font-mono text-[10px] text-zinc-400 truncate">
+                    <div className="font-mono text-[11px] text-slate-400 break-all bg-slate-900 p-2 rounded border border-slate-800">
                       {k.key_string}
                     </div>
-                    <div className="text-[10px] text-zinc-400 flex justify-between font-mono">
+                    <div className="text-[11px] text-slate-400 flex justify-between font-mono pt-1">
                       <span>Трафик: {k.traffic_used_gb} / {k.traffic_limit_gb} GB</span>
                       <span>До: {k.expires_at || 'бессрочно'}</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-[11px] text-zinc-400 font-mono text-center py-2">
-                  Активных ключей не найдено
+                <div className="text-xs text-slate-400 text-center py-3">
+                  Для данного абонента нет ключей в базе
                 </div>
               )}
             </div>
           </>
         ) : (
-          <div className="text-center text-zinc-400 text-xs font-mono py-8">
-            Выберите обращение
+          <div className="text-center text-slate-400 text-xs py-8">
+            Выберите тикет
           </div>
         )}
       </div>

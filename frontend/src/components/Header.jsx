@@ -1,15 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   ShieldCheck, 
-  Activity, 
-  Inbox, 
-  Layers, 
+  BarChart3, 
+  MessageSquare, 
+  Sliders, 
   BookOpen, 
-  Settings as SettingsIcon, 
+  Settings, 
   ChevronDown, 
   LogOut,
-  HelpCircle
+  Users
 } from 'lucide-react';
+
+const ROLES_TITLE = {
+  director: 'Директор',
+  support_lead: 'Руководитель саппорта',
+  support_agent: 'Оператор поддержки',
+  superroot: 'Супер-администратор'
+};
 
 export default function Header({ user, currentTab, setTab, onQuickRoleSwitch, onLogout }) {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
@@ -26,159 +33,140 @@ export default function Header({ user, currentTab, setTab, onQuickRoleSwitch, on
   }, []);
 
   return (
-    <header className="border-b border-zinc-800 bg-zinc-950 sticky top-0 z-50 px-4 md:px-6 py-2.5 flex items-center justify-between">
-      {/* Brand & System Mode */}
+    <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50 px-5 py-3 flex items-center justify-between">
+      {/* Brand & Stats */}
       <div className="flex items-center space-x-6">
         <div className="flex items-center space-x-3">
-          <div className="w-7 h-7 rounded bg-zinc-900 border border-zinc-750 flex items-center justify-center text-zinc-100 font-bold text-xs">
-            T
+          <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-100 shadow-sm">
+            <ShieldCheck className="w-5 h-5 text-slate-200" />
           </div>
-          <div className="flex flex-col">
+          <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-xs tracking-wider text-zinc-100 uppercase">TOPBOX SUPPORT OS</span>
-              <span className="text-[10px] text-zinc-400 font-mono px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800">
-                40 000 USERS
+              <span className="font-bold text-sm tracking-tight text-white">TOPBOX SUPPORT</span>
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300">
+                40 000 абонентов
               </span>
             </div>
-            <span className="text-[10px] text-zinc-400">Система контроля качества продукта по обратной связи</span>
+            <p className="text-[11px] text-slate-400">Система контроля качества и омниканальной поддержки</p>
           </div>
         </div>
 
-        {/* Navigation Tabs - Strict Monochrome */}
-        <nav className="hidden md:flex items-center space-x-1 pl-4 border-l border-zinc-800">
+        {/* Navigation Tabs */}
+        <nav className="hidden lg:flex items-center space-x-1 pl-4 border-l border-slate-800">
           <button
             onClick={() => setTab('dashboard')}
-            className={`flex items-center space-x-2 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
               currentTab === 'dashboard'
-                ? 'bg-zinc-800 text-white font-semibold border border-zinc-700'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
             }`}
-            title="Экран собственника: 40 000 база, метрики здоровья продукта, ТОП проблем"
           >
-            <Activity className="w-3.5 h-3.5" />
+            <BarChart3 className="w-4 h-4" />
             <span>VPN Health (Директор)</span>
           </button>
 
           <button
             onClick={() => setTab('workspace')}
-            className={`flex items-center space-x-2 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
               currentTab === 'workspace'
-                ? 'bg-zinc-800 text-white font-semibold border border-zinc-700'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
             }`}
-            title="Рабочее место оператора: тикеты TG/IG, паспорт 7 полей, ИИ-копилот, ключи"
           >
-            <Inbox className="w-3.5 h-3.5" />
-            <span>Обращения и Паспорт</span>
+            <MessageSquare className="w-4 h-4" />
+            <span>Диалоги и Паспорт</span>
           </button>
 
           {(user?.role === 'director' || user?.role === 'support_lead' || user?.role === 'superroot') && (
             <button
               onClick={() => setTab('problems')}
-              className={`flex items-center space-x-2 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 currentTab === 'problems'
-                  ? 'bg-zinc-800 text-white font-semibold border border-zinc-700'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                  ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
               }`}
-              title="ITIL L5: Реестр проблем и бэклог устранения первопричин"
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Problem Register & Backlog</span>
+              <Sliders className="w-4 h-4" />
+              <span>Реестр проблем & Бэклог</span>
             </button>
           )}
 
           <button
             onClick={() => setTab('knowledge')}
-            className={`flex items-center space-x-2 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
               currentTab === 'knowledge'
-                ? 'bg-zinc-800 text-white font-semibold border border-zinc-700'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
             }`}
-            title="База знаний: эталонные инструкции для клиентов и автоответов"
           >
-            <BookOpen className="w-3.5 h-3.5" />
+            <BookOpen className="w-4 h-4" />
             <span>База знаний</span>
           </button>
 
           {user?.role === 'superroot' && (
             <button
               onClick={() => setTab('settings')}
-              className={`flex items-center space-x-2 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 currentTab === 'settings'
-                  ? 'bg-zinc-800 text-white font-semibold border border-zinc-700'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                  ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
               }`}
-              title="Управление токенами TG, IG, OpenRouter и симулятором"
             >
-              <SettingsIcon className="w-3.5 h-3.5" />
+              <Settings className="w-4 h-4" />
               <span>Настройки</span>
             </button>
           )}
         </nav>
       </div>
 
-      {/* Role Selection & Profile */}
-      <div className="flex items-center space-x-2.5">
+      {/* Role Switcher & User Profile */}
+      <div className="flex items-center space-x-3">
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-            className="flex items-center space-x-2 px-2.5 py-1.5 rounded bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs text-zinc-300 transition-colors"
+            className="flex items-center space-x-2.5 px-3 py-1.5 rounded-lg bg-slate-850 hover:bg-slate-800 border border-slate-750 text-xs text-slate-200 transition-colors shadow-sm"
           >
-            <span className="px-1.5 py-0.2 rounded text-[11px] font-mono bg-zinc-800 text-zinc-200 border border-zinc-700">
-              {user?.role}
-            </span>
-            <span className="text-zinc-200 font-medium text-xs max-w-[120px] truncate">{user?.full_name}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="font-semibold">{ROLES_TITLE[user?.role] || user?.role}</span>
+            <span className="text-slate-400 text-[11px]">({user?.full_name})</span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </button>
 
           {roleMenuOpen && (
-            <div className="absolute right-0 mt-1.5 w-72 bg-zinc-900 border border-zinc-800 rounded shadow-2xl py-1 z-50">
-              <div className="px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-b border-zinc-800">
-                Переключение роли (Демо-режим)
+            <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-750 rounded-xl shadow-2xl p-2 z-50">
+              <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800 mb-1">
+                Быстрое переключение роли (Демо)
               </div>
 
               <button
                 onClick={() => { onQuickRoleSwitch('director'); setRoleMenuOpen(false); }}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-800 flex items-center justify-between transition-colors"
+                className="w-full text-left p-2.5 rounded-lg hover:bg-slate-800 transition-colors"
               >
-                <div>
-                  <div className="font-semibold text-zinc-100">Директор (Director)</div>
-                  <div className="text-[10px] text-zinc-400">Экран здоровья базы 40k, еженедельные отчеты</div>
-                </div>
-                {user?.role === 'director' && <span className="text-zinc-100 font-mono text-xs font-bold">✓</span>}
+                <div className="text-xs font-semibold text-white">Директор (Director)</div>
+                <div className="text-[11px] text-slate-400">Экран здоровья базы 40k, ТОП проблем, отчеты</div>
               </button>
 
               <button
                 onClick={() => { onQuickRoleSwitch('lead'); setRoleMenuOpen(false); }}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-800 flex items-center justify-between transition-colors"
+                className="w-full text-left p-2.5 rounded-lg hover:bg-slate-800 transition-colors"
               >
-                <div>
-                  <div className="font-semibold text-zinc-100">Руководитель саппорта (Lead)</div>
-                  <div className="text-[10px] text-zinc-400">Problem Register, бэклог, SLA, база знаний</div>
-                </div>
-                {user?.role === 'support_lead' && <span className="text-zinc-100 font-mono text-xs font-bold">✓</span>}
+                <div className="text-xs font-semibold text-white">Руководитель (Lead / Analyst)</div>
+                <div className="text-[11px] text-slate-400">Реестр проблем (ITIL), продуктовый бэклог, SLA</div>
               </button>
 
               <button
                 onClick={() => { onQuickRoleSwitch('agent'); setRoleMenuOpen(false); }}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-800 flex items-center justify-between transition-colors"
+                className="w-full text-left p-2.5 rounded-lg hover:bg-slate-800 transition-colors"
               >
-                <div>
-                  <div className="font-semibold text-zinc-100">Менеджер саппорта (Agent)</div>
-                  <div className="text-[10px] text-zinc-400">Диалоги TG/IG, паспорт тикета, ИИ Copilot, ключи</div>
-                </div>
-                {user?.role === 'support_agent' && <span className="text-zinc-100 font-mono text-xs font-bold">✓</span>}
+                <div className="text-xs font-semibold text-white">Оператор саппорта (Agent)</div>
+                <div className="text-[11px] text-slate-400">Рабочий стол: чат TG/IG, паспорт 7 полей, ключи</div>
               </button>
 
               <button
                 onClick={() => { onQuickRoleSwitch('superroot'); setRoleMenuOpen(false); }}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-800 flex items-center justify-between transition-colors"
+                className="w-full text-left p-2.5 rounded-lg hover:bg-slate-800 transition-colors"
               >
-                <div>
-                  <div className="font-semibold text-zinc-100">Суперрут (Superroot)</div>
-                  <div className="text-[10px] text-zinc-400">Токены TG/IG, OpenRouter пул, симулятор</div>
-                </div>
-                {user?.role === 'superroot' && <span className="text-zinc-100 font-mono text-xs font-bold">✓</span>}
+                <div className="text-xs font-semibold text-white">Суперрут (Superroot)</div>
+                <div className="text-[11px] text-slate-400">Токены Telegram/Instagram, OpenRouter, симулятор</div>
               </button>
             </div>
           )}
@@ -186,8 +174,8 @@ export default function Header({ user, currentTab, setTab, onQuickRoleSwitch, on
 
         <button
           onClick={onLogout}
-          className="p-1.5 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-colors"
-          title="Выйти из системы"
+          className="p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+          title="Выйти"
         >
           <LogOut className="w-4 h-4" />
         </button>
