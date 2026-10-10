@@ -26,7 +26,7 @@ import {
   ChevronRight,
   ChevronDown
 } from 'lucide-react';
-import { InstagramIcon } from './Icons';
+import { TelegramIcon, InstagramIcon, ChannelBadge } from './Icons';
 import { api } from '../api';
 
 // Predefined Canned Responses (Быстрые ответы)
@@ -460,6 +460,20 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
     await loadTicketDetails(selectedTicketId);
   };
 
+  const handleSendTgBotLink = async () => {
+    if (!selectedTicketId) return;
+    const text = "🔑 Для автоматического получения, проверки подписки и управления вашим VPN-ключом перейдите в нашего официального Telegram-бота: https://t.me/topvpnhelp_bot (команда /start).";
+    await api.tickets.sendMessage(selectedTicketId, {
+      ticket_id: selectedTicketId,
+      message_text: text,
+      sender_type: 'operator'
+    });
+    await loadTicketDetails(selectedTicketId);
+    await loadTickets();
+    setActionNotice('Ссылка на Telegram-бота отправлена клиенту!');
+    setTimeout(() => setActionNotice(''), 3000);
+  };
+
   const handleCopyKeyString = (str) => {
     navigator.clipboard.writeText(str);
     setCopiedKey(true);
@@ -578,11 +592,15 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center space-x-2">
-                        <div className="w-5 h-5 rounded bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-750 flex items-center justify-center shrink-0">
+                        <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 border shadow-xs ${
+                          t.channel === 'telegram' 
+                            ? 'bg-sky-500/15 border-sky-500/30 text-sky-500' 
+                            : 'bg-pink-500/15 border-pink-500/30 text-pink-500'
+                        }`}>
                           {t.channel === 'telegram' ? (
-                            <MessageCircle className="w-3 h-3 text-zinc-600 dark:text-zinc-300" />
+                            <TelegramIcon className="w-3.5 h-3.5 text-sky-500" />
                           ) : (
-                            <InstagramIcon className="w-3 h-3 text-zinc-600 dark:text-zinc-300" />
+                            <InstagramIcon className="w-3.5 h-3.5 text-pink-500" />
                           )}
                         </div>
                         <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate max-w-[130px]">
@@ -617,7 +635,10 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                     </div>
 
                     <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
-                      <span>{t.ticket_number}</span>
+                      <div className="flex items-center space-x-1.5">
+                        <ChannelBadge channel={t.channel} showLabel={true} />
+                        <span>{t.ticket_number}</span>
+                      </div>
                       <span>{t.device || 'Не указано'} • {t.operator || 'Сеть?'}</span>
                     </div>
                   </div>
@@ -648,8 +669,16 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                       <ArrowLeft className="w-4 h-4" />
                     </button>
 
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-750 flex items-center justify-center font-bold text-xs text-zinc-800 dark:text-zinc-200 font-mono shrink-0">
-                      {selectedTicket.channel_user_name?.charAt(0) || 'U'}
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs font-mono shrink-0 border shadow-xs ${
+                      selectedTicket.channel === 'telegram'
+                        ? 'bg-sky-500/15 border-sky-500/30 text-sky-500'
+                        : 'bg-pink-500/15 border-pink-500/30 text-pink-500'
+                    }`}>
+                      {selectedTicket.channel === 'telegram' ? (
+                        <TelegramIcon className="w-4 h-4 text-sky-500" />
+                      ) : (
+                        <InstagramIcon className="w-4 h-4 text-pink-500" />
+                      )}
                     </div>
 
                     <div className="min-w-0">
@@ -661,8 +690,10 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                           {selectedTicket.channel_user_handle}
                         </span>
                       </div>
-                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
-                        {selectedTicket.channel} • {selectedTicket.ticket_number}
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 flex items-center space-x-1.5 font-mono">
+                        <ChannelBadge channel={selectedTicket.channel} showLabel={true} />
+                        <span>•</span>
+                        <span>{selectedTicket.ticket_number}</span>
                       </div>
                     </div>
                   </div>
@@ -713,20 +744,35 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                   </div>
 
                   <div className="hidden sm:flex items-center space-x-1.5">
-                    <button
-                      onClick={handleSendKey}
-                      className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
-                    >
-                      <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                      <span>Ключ</span>
-                    </button>
-                    <button
-                      onClick={handleRecreateKey}
-                      className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                      <span>Сброс</span>
-                    </button>
+                    {selectedTicket.channel === 'telegram' ? (
+                      <>
+                        <button
+                          onClick={handleSendKey}
+                          className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
+                          title="Отправить действующий ключ абоненту в Telegram"
+                        >
+                          <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                          <span>Ключ</span>
+                        </button>
+                        <button
+                          onClick={handleRecreateKey}
+                          className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
+                          title="Сбросить и выпустить ключ в Telegram"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                          <span>Сброс</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={handleSendTgBotLink}
+                        className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
+                        title="Отправить клиенту в Direct ссылку на Telegram-бота для выдачи ключа"
+                      >
+                        <TelegramIcon className="w-3.5 h-3.5 text-sky-500" />
+                        <span>Ссылка на TG-бота</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -867,23 +913,38 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                 >
                   <Zap className="w-3 h-3 text-amber-500" />
                   <span>Ответы</span>
-                </button>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleSendKey}
-                  className="px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 text-xs font-medium"
-                >
-                  🔑 Ключ
-                </button>
+                  {selectedTicket.channel === 'telegram' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleSendKey}
+                        className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 text-xs font-medium flex items-center space-x-1"
+                      >
+                        <Key className="w-3 h-3 text-zinc-500" />
+                        <span>Ключ</span>
+                      </button>
 
-                <button
-                  type="button"
-                  onClick={handleRecreateKey}
-                  className="px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 text-xs font-medium"
-                >
-                  ⚡ Сброс
-                </button>
+                      <button
+                        type="button"
+                        onClick={handleRecreateKey}
+                        className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 text-xs font-medium flex items-center space-x-1"
+                      >
+                        <RefreshCw className="w-3 h-3 text-zinc-500" />
+                        <span>Сброс</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSendTgBotLink}
+                      className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 text-xs font-medium flex items-center space-x-1 font-mono"
+                    >
+                      <TelegramIcon className="w-3 h-3 text-sky-500" />
+                      <span>Ссылка на TG-бота</span>
+                    </button>
+                  )}
 
                 <button
                   type="button"
@@ -1270,50 +1331,70 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
               </div>
 
               {/* VPN Key Inspector Card */}
-              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
-                <div className="flex items-center justify-between text-xs font-bold text-zinc-900 dark:text-zinc-200">
-                  <span className="flex items-center space-x-1.5">
-                    <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                    <span>Активные ключи VPN</span>
-                  </span>
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">databasetop</span>
-                </div>
-
-                {vpnKeys.length > 0 ? (
-                  vpnKeys.map((k) => (
-                    <div key={k.id} className="bg-white dark:bg-zinc-950 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-850 space-y-1.5 text-xs shadow-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-zinc-900 dark:text-white font-mono">{k.server} • {k.protocol}</span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
-                          k.subscription_status === 'active' 
-                            ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900' 
-                            : 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900'
-                        }`}>
-                          {k.subscription_status}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-200 dark:border-zinc-800 font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
-                        <span className="truncate max-w-[170px] sm:max-w-[190px]">{k.key_string}</span>
-                        <button
-                          onClick={() => handleCopyKeyString(k.key_string)}
-                          className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors ml-1"
-                          title="Скопировать ключ"
-                        >
-                          {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 flex justify-between font-mono pt-0.5">
-                        <span>Трафик: {k.traffic_used_gb} / {k.traffic_limit_gb} GB</span>
-                        <span>До: {k.expires_at || 'бессрочно'}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-xs text-zinc-400 text-center py-2 font-mono">
-                    Для данного абонента нет ключей в базе
+              {selectedTicket.channel === 'telegram' ? (
+                <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between text-xs font-bold text-zinc-900 dark:text-zinc-200">
+                    <span className="flex items-center space-x-1.5">
+                      <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                      <span>Активные ключи VPN</span>
+                    </span>
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">databasetop</span>
                   </div>
-                )}
-              </div>
+
+                  {vpnKeys.length > 0 ? (
+                    vpnKeys.map((k) => (
+                      <div key={k.id} className="bg-white dark:bg-zinc-950 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-850 space-y-1.5 text-xs shadow-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-zinc-900 dark:text-white font-mono">{k.server} • {k.protocol}</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                            k.subscription_status === 'active' 
+                              ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900' 
+                              : 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900'
+                          }`}>
+                            {k.subscription_status}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-200 dark:border-zinc-800 font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
+                          <span className="truncate max-w-[170px] sm:max-w-[190px]">{k.key_string}</span>
+                          <button
+                            onClick={() => handleCopyKeyString(k.key_string)}
+                            className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors ml-1"
+                            title="Скопировать ключ"
+                          >
+                            {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                        <div className="text-[10px] text-zinc-500 dark:text-zinc-400 flex justify-between font-mono pt-0.5">
+                          <span>Трафик: {k.traffic_used_gb} / {k.traffic_limit_gb} GB</span>
+                          <span>До: {k.expires_at || 'бессрочно'}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-zinc-400 text-center py-2 font-mono">
+                      Для данного абонента нет ключей в базе
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 space-y-2.5 shadow-xs">
+                  <div className="flex items-center space-x-1.5 text-xs font-bold text-zinc-900 dark:text-zinc-200">
+                    <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                    <span>Управление ключами (Telegram Only)</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    Выдача, замена и сброс ключей производятся через бота в Telegram (@topvpnhelp_bot). Для клиента из Instagram доступна быстрая отправка ссылки на бота.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSendTgBotLink}
+                    className="w-full py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
+                  >
+                    <TelegramIcon className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                    <span>Отправить ссылку на бота клиенту в Direct</span>
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center text-zinc-400 text-xs py-8 font-mono">
