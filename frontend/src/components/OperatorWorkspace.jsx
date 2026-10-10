@@ -14,9 +14,8 @@ import {
   CheckCircle2, 
   XCircle, 
   ArrowLeft, 
-  ChevronRight,
-  ShieldCheck,
-  AlertTriangle
+  SlidersHorizontal,
+  ChevronRight
 } from 'lucide-react';
 import { InstagramIcon } from './Icons';
 import { api } from '../api';
@@ -118,7 +117,7 @@ export default function OperatorWorkspace({ user }) {
 
   const handleSelectTicket = (tId) => {
     setSelectedTicketId(tId);
-    setMobileView('chat'); // On mobile switch to conversation canvas immediately
+    setMobileView('chat');
   };
 
   const handleSendMessage = async (e) => {
@@ -158,11 +157,11 @@ export default function OperatorWorkspace({ user }) {
     }
   };
 
-  // 1. Resolution Action: Проблема решена (Green Action Button)
+  // Resolution Action: Решено
   const handleResolveTicket = async () => {
     if (!selectedTicketId) return;
     try {
-      setActionNotice('Проблема отмечена решенной!');
+      setActionNotice('Проблема отмечена решённой!');
       await api.tickets.resolve(selectedTicketId);
       await loadTicketDetails(selectedTicketId);
       await loadTickets();
@@ -172,7 +171,7 @@ export default function OperatorWorkspace({ user }) {
     }
   };
 
-  // 2. Resolution Action: Не решено (Нужен инженер) (Red Action Button)
+  // Resolution Action: Не решено
   const handleEscalateTicket = async () => {
     if (!selectedTicketId) return;
     try {
@@ -186,7 +185,7 @@ export default function OperatorWorkspace({ user }) {
     }
   };
 
-  // 3. AI Setup Assistant: Автоматическая помощь в настройке клиенту
+  // AI Setup Assistant
   const handleSendAiSetup = async () => {
     if (!selectedTicketId) return;
     setAiLoading(true);
@@ -259,36 +258,36 @@ export default function OperatorWorkspace({ user }) {
   };
 
   return (
-    <div className="h-[calc(100vh-56px)] flex flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950">
-      {/* Mobile Top Navigation Tabs (VISIBLE ONLY ON MOBILE < MD) */}
-      <div className="md:hidden border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 flex items-center justify-between shrink-0 shadow-xs">
-        <div className="grid grid-cols-3 gap-1.5 w-full">
+    <div className="h-[calc(100dvh-3.25rem-3.5rem)] lg:h-[calc(100dvh-3.5rem)] flex flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+      {/* Mobile Top Segmented Control (ONLY ON MOBILE < MD) */}
+      <div className="md:hidden border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 flex items-center justify-between shrink-0 shadow-xs">
+        <div className="grid grid-cols-3 gap-1 w-full bg-zinc-100 dark:bg-zinc-800/80 p-0.5 rounded-lg">
           <button
             onClick={() => setMobileView('queue')}
-            className={`py-1.5 rounded-lg text-xs font-semibold text-center transition-colors ${
+            className={`py-1.5 rounded-md text-xs font-semibold text-center transition-all ${
               mobileView === 'queue'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
+                : 'text-zinc-500 dark:text-zinc-400'
             }`}
           >
             📋 Очередь ({tickets.length})
           </button>
           <button
             onClick={() => setMobileView('chat')}
-            className={`py-1.5 rounded-lg text-xs font-semibold text-center transition-colors ${
+            className={`py-1.5 rounded-md text-xs font-semibold text-center transition-all ${
               mobileView === 'chat'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
+                : 'text-zinc-500 dark:text-zinc-400'
             }`}
           >
             💬 Диалог
           </button>
           <button
             onClick={() => setMobileView('passport')}
-            className={`py-1.5 rounded-lg text-xs font-semibold text-center transition-colors ${
+            className={`py-1.5 rounded-md text-xs font-semibold text-center transition-all ${
               mobileView === 'passport'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
+                : 'text-zinc-500 dark:text-zinc-400'
             }`}
           >
             📑 Паспорт
@@ -296,7 +295,7 @@ export default function OperatorWorkspace({ user }) {
         </div>
       </div>
 
-      {/* Main 3-Pane Body with Mobile Responsive Switching */}
+      {/* Main 3-Pane Responsive Layout */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
         {/* ======================================================== */}
         {/* PANE 1: MASTER LIST (QUEUE: Telegram + Instagram)       */}
@@ -304,7 +303,7 @@ export default function OperatorWorkspace({ user }) {
         <div className={`w-full md:w-80 lg:w-88 border-r border-zinc-200 dark:border-zinc-800 flex-col bg-white dark:bg-zinc-950 shrink-0 ${
           mobileView === 'queue' ? 'flex flex-1' : 'hidden md:flex'
         }`}>
-          <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 space-y-2.5">
+          <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-zinc-900 dark:text-zinc-200 tracking-tight font-mono uppercase">
                 Очередь тикетов
@@ -331,7 +330,7 @@ export default function OperatorWorkspace({ user }) {
               <select
                 value={channelFilter}
                 onChange={(e) => setChannelFilter(e.target.value)}
-                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded px-2 py-1 text-zinc-800 dark:text-zinc-300 text-xs focus:outline-none focus:border-zinc-500 flex-1 font-mono shadow-xs"
+                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded px-2 py-1.5 text-zinc-800 dark:text-zinc-300 text-xs focus:outline-none focus:border-zinc-500 flex-1 font-mono shadow-xs"
               >
                 <option value="">Все каналы</option>
                 <option value="telegram">Telegram</option>
@@ -341,7 +340,7 @@ export default function OperatorWorkspace({ user }) {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded px-2 py-1 text-zinc-800 dark:text-zinc-300 text-xs focus:outline-none focus:border-zinc-500 flex-1 font-mono shadow-xs"
+                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded px-2 py-1.5 text-zinc-800 dark:text-zinc-300 text-xs focus:outline-none focus:border-zinc-500 flex-1 font-mono shadow-xs"
               >
                 <option value="">Все статусы</option>
                 <option value="new">Новые</option>
@@ -352,7 +351,7 @@ export default function OperatorWorkspace({ user }) {
 
               <button
                 onClick={loadTickets}
-                className="p-1.5 rounded bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-zinc-250 dark:border-zinc-800 shadow-xs"
+                className="p-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-zinc-250 dark:border-zinc-800 shadow-xs"
                 title="Обновить список"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -438,81 +437,103 @@ export default function OperatorWorkspace({ user }) {
         }`}>
           {selectedTicket ? (
             <>
-              {/* Conversation Header with Customer Info & Mobile Back button */}
-              <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-950 shrink-0 shadow-xs">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  {/* Mobile Back to Queue button */}
-                  <button
-                    onClick={() => setMobileView('queue')}
-                    className="md:hidden p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300"
-                    title="Назад к очереди"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
+              {/* Responsive Chat Header: Top Customer Info + Mobile Controls */}
+              <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-2.5 sm:p-3 shrink-0 shadow-xs space-y-2">
+                {/* Top Row: Customer Identification */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setMobileView('queue')}
+                      className="md:hidden p-1.5 rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200"
+                      title="К очереди"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
 
-                  <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-750 flex items-center justify-center font-bold text-xs text-zinc-800 dark:text-zinc-200 font-mono shrink-0">
-                    {selectedTicket.channel_user_name?.charAt(0) || 'U'}
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-750 flex items-center justify-center font-bold text-xs text-zinc-800 dark:text-zinc-200 font-mono shrink-0">
+                      {selectedTicket.channel_user_name?.charAt(0) || 'U'}
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate max-w-[120px] sm:max-w-none">
+                          {selectedTicket.channel_user_name}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono truncate max-w-[80px] sm:max-w-none">
+                          {selectedTicket.channel_user_handle}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
+                        {selectedTicket.channel} • {selectedTicket.ticket_number}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate max-w-[140px] sm:max-w-none">
-                        {selectedTicket.channel_user_name}
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 font-mono hidden sm:inline-block">
-                        ID: {selectedTicket.channel_user_id}
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-zinc-500 dark:text-zinc-400 flex items-center space-x-1.5 font-mono">
-                      <span>{selectedTicket.channel}</span>
-                      <span>•</span>
-                      <span>{selectedTicket.ticket_number}</span>
-                    </div>
+
+                  {/* Top Right Mobile Passport Switcher */}
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={() => setMobileView('passport')}
+                      className="md:hidden px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 flex items-center space-x-1"
+                    >
+                      <span>Паспорт</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
 
-                {/* Primary Resolution Action Buttons Pattern (РЕШИЛ / НЕ РЕШИЛ) */}
-                <div className="flex items-center space-x-1.5">
-                  {/* Button 1: Проблема решена (GREEN) */}
-                  <button
-                    onClick={handleResolveTicket}
-                    className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-xs"
-                    title="Отметить тикет как решенный и отправить подтверждение абоненту"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Решено</span>
-                  </button>
+                {/* Bottom Row: Resolution & Primary Action Buttons (Thumb-friendly row) */}
+                <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-zinc-100 dark:border-zinc-850/80">
+                  <div className="flex items-center space-x-1.5 flex-1">
+                    {/* Button 1: Решено (GREEN) */}
+                    <button
+                      onClick={handleResolveTicket}
+                      className="flex-1 sm:flex-initial flex items-center justify-center space-x-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-xs"
+                      title="Отметить тикет как решенный"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>Решено</span>
+                    </button>
 
-                  {/* Button 2: Не решено / Нужен инженер (RED) */}
-                  <button
-                    onClick={handleEscalateTicket}
-                    className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors shadow-xs"
-                    title="Эскалировать тикет инженеру L2 при нерешенной проблеме"
-                  >
-                    <XCircle className="w-3.5 h-3.5" />
-                    <span>Не решено</span>
-                  </button>
+                    {/* Button 2: Не решено (RED) */}
+                    <button
+                      onClick={handleEscalateTicket}
+                      className="flex-1 sm:flex-initial flex items-center justify-center space-x-1 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors shadow-xs"
+                      title="Эскалировать тикет инженеру L2"
+                    >
+                      <XCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>Не решено</span>
+                    </button>
+                  </div>
 
-                  {/* Mobile Jump to Passport button */}
-                  <button
-                    onClick={() => setMobileView('passport')}
-                    className="md:hidden p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300"
-                    title="Открыть паспорт тикета"
-                  >
-                    <FileText className="w-4 h-4" />
-                  </button>
+                  <div className="hidden sm:flex items-center space-x-1.5">
+                    <button
+                      onClick={handleSendKey}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
+                    >
+                      <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                      <span>Ключ</span>
+                    </button>
+                    <button
+                      onClick={handleRecreateKey}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                      <span>Сброс</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Action Banner Feedback if any */}
               {actionNotice && (
-                <div className="bg-emerald-50 dark:bg-emerald-950/70 border-b border-emerald-200 dark:border-emerald-900 px-4 py-2 text-xs text-emerald-800 dark:text-emerald-200 font-medium flex items-center space-x-2 animate-fadeIn">
-                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>{actionNotice}</span>
+                <div className="bg-emerald-50 dark:bg-emerald-950/70 border-b border-emerald-200 dark:border-emerald-900 px-3 py-1.5 text-xs text-emerald-800 dark:text-emerald-200 font-medium flex items-center space-x-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="truncate">{actionNotice}</span>
                 </div>
               )}
 
               {/* Conversation Stream */}
-              <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-3.5 bg-zinc-50/40 dark:bg-zinc-950">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-zinc-50/40 dark:bg-zinc-950">
                 {messages.map((m) => {
                   const isClient = m.sender_type === 'client';
                   const isAI = m.sender_type === 'ai';
@@ -529,7 +550,7 @@ export default function OperatorWorkspace({ user }) {
                       </div>
 
                       <div
-                        className={`max-w-[85%] sm:max-w-[80%] rounded-xl px-4 py-2.5 text-xs leading-relaxed whitespace-pre-wrap shadow-xs ${
+                        className={`max-w-[88%] sm:max-w-[80%] rounded-xl px-3.5 py-2 text-xs leading-relaxed whitespace-pre-wrap shadow-xs ${
                           isClient
                             ? 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100'
                             : isAI
@@ -546,17 +567,17 @@ export default function OperatorWorkspace({ user }) {
 
               {/* AI Suggestion Banner Pattern */}
               {aiSuggestion && (
-                <div className="mx-3 sm:mx-4 mb-2 p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-750 text-xs space-y-2 shadow-lg">
-                  <div className="flex items-center justify-between pb-2 border-b border-zinc-150 dark:border-zinc-800">
-                    <div className="flex items-center space-x-1.5 text-zinc-900 dark:text-zinc-200 font-semibold">
+                <div className="mx-2 sm:mx-4 mb-2 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-750 text-xs space-y-1.5 shadow-lg">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-zinc-150 dark:border-zinc-800">
+                    <div className="flex items-center space-x-1.5 text-zinc-900 dark:text-zinc-200 font-semibold text-[11px]">
                       <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Подсказка от ИИ ({aiSuggestion.model_used})</span>
+                      <span>Подсказка от ИИ</span>
                     </div>
                     <button
                       onClick={() => setMessageText(aiSuggestion.suggested_reply)}
-                      className="px-2.5 py-1 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-950 text-xs font-semibold transition-colors shadow-xs"
+                      className="px-2 py-0.5 rounded bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 text-[11px] font-semibold"
                     >
-                      Вставить в чат
+                      Вставить
                     </button>
                   </div>
                   <div className="text-zinc-700 dark:text-zinc-300 font-mono text-[11px] leading-relaxed line-clamp-3">
@@ -565,59 +586,59 @@ export default function OperatorWorkspace({ user }) {
                 </div>
               )}
 
-              {/* Action Chips Toolbar (with AI Setup Assistant button) */}
-              <div className="px-3 sm:px-4 py-2 border-t border-zinc-200 dark:border-zinc-850 bg-white/70 dark:bg-zinc-900/30 flex items-center space-x-1.5 overflow-x-auto text-xs shrink-0">
-                {/* 1. Помощь в настройке от ИИ (Action Chip) */}
+              {/* Action Chips Toolbar with Inertia Touch Scroll */}
+              <div className="px-2.5 sm:px-4 py-2 border-t border-zinc-200 dark:border-zinc-850 bg-white/70 dark:bg-zinc-900/40 flex items-center space-x-1.5 overflow-x-auto touch-scroll shrink-0">
+                {/* 1. Помощь в настройке от ИИ */}
                 <button
                   type="button"
                   onClick={handleSendAiSetup}
                   disabled={aiLoading}
-                  className="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold shrink-0 flex items-center space-x-1.5 transition-colors shadow-xs"
+                  className="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold shrink-0 flex items-center space-x-1 shadow-xs text-xs"
                   title="ИИ определяет проблему и отправляет готовую пошаговую настройку клиенту"
                 >
                   <Wrench className="w-3 h-3 text-zinc-950" />
-                  <span>🛠 Помощь в настройке (ИИ)</span>
+                  <span>🛠 Настройка ИИ</span>
                 </button>
 
                 {/* 2. Отправить действующий ключ */}
                 <button
                   type="button"
                   onClick={handleSendKey}
-                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors shadow-xs font-medium"
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 text-xs font-medium"
                 >
-                  🔑 Выдать ключ
+                  🔑 Ключ
                 </button>
 
                 {/* 3. Сбросить ключ */}
                 <button
                   type="button"
                   onClick={handleRecreateKey}
-                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors shadow-xs font-medium"
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 text-xs font-medium"
                 >
-                  ⚡ Сбросить ключ
+                  ⚡ Сбросить
                 </button>
 
                 {/* 4. Быстрые гайды */}
                 <button
                   type="button"
                   onClick={() => handleSendGuide('iPhone')}
-                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors font-mono shadow-xs"
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 font-mono text-xs"
                 >
-                  iOS Гайд
+                  iOS
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSendGuide('Android')}
-                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors font-mono shadow-xs"
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 font-mono text-xs"
                 >
-                  Android Гайд
+                  Android
                 </button>
 
                 <button
                   type="button"
                   onClick={handleAiSuggest}
                   disabled={aiLoading}
-                  className="px-2.5 py-1 rounded-md bg-zinc-900 dark:bg-zinc-800 hover:bg-zinc-800 dark:hover:bg-zinc-750 text-white border border-zinc-800 dark:border-zinc-700 font-medium shrink-0 flex items-center space-x-1 transition-colors shadow-xs"
+                  className="px-2.5 py-1 rounded-md bg-zinc-900 dark:bg-zinc-800 text-white border border-zinc-800 shrink-0 flex items-center space-x-1 text-xs font-medium"
                 >
                   <Sparkles className="w-3 h-3 text-amber-400" />
                   <span>Ответ ИИ</span>
@@ -625,26 +646,26 @@ export default function OperatorWorkspace({ user }) {
               </div>
 
               {/* Bottom Composer */}
-              <form onSubmit={handleSendMessage} className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center space-x-2 shrink-0">
+              <form onSubmit={handleSendMessage} className="p-2.5 sm:p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center space-x-2 shrink-0">
                 <input
                   type="text"
-                  placeholder="Ответ клиенту (отправится в Telegram или Instagram)..."
+                  placeholder="Ответ клиенту (TG / IG)..."
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
-                  className="flex-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-3.5 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-500 shadow-xs"
+                  className="flex-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-500 shadow-xs"
                 />
                 <button
                   type="submit"
                   disabled={sendingMsg || !messageText.trim()}
-                  className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white disabled:opacity-50 text-white dark:text-zinc-950 font-semibold text-xs flex items-center space-x-1.5 transition-colors shadow-xs shrink-0"
+                  className="px-3.5 sm:px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white disabled:opacity-50 text-white dark:text-zinc-950 font-bold text-xs flex items-center space-x-1 transition-colors shadow-xs shrink-0"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>Отправить</span>
+                  <span className="hidden sm:inline">Отправить</span>
                 </button>
               </form>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-zinc-400 text-xs font-mono">
+            <div className="flex-1 flex items-center justify-center text-zinc-400 text-xs font-mono p-4">
               Выберите диалог из очереди слева
             </div>
           )}
@@ -658,15 +679,15 @@ export default function OperatorWorkspace({ user }) {
         }`}>
           {selectedTicket ? (
             <>
-              {/* Inspector Header with Save Button and Mobile back to Chat */}
+              {/* Inspector Header with Save Button and Mobile Back to Chat */}
               <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setMobileView('chat')}
-                    className="md:hidden p-1 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300"
+                    className="md:hidden p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-850 text-zinc-700 dark:text-zinc-200"
                     title="Назад в чат"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <ArrowLeft className="w-4 h-4" />
                   </button>
                   <div className="flex flex-col">
                     <span className="font-bold text-xs uppercase tracking-wide text-zinc-900 dark:text-zinc-100 font-mono">
@@ -686,7 +707,7 @@ export default function OperatorWorkspace({ user }) {
                 </button>
               </div>
 
-              {/* Status & Resolution Block (РЕШИЛ / НЕ РЕШИЛ TOGGLE IN PASSPORT) */}
+              {/* Status & Resolution Block (РЕШЕНО / НЕ РЕШЕНО) */}
               <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
                 <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center justify-between">
                   <span>Результат обработки:</span>
@@ -706,7 +727,7 @@ export default function OperatorWorkspace({ user }) {
                     className="py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center space-x-1 shadow-xs"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Проблема решена</span>
+                    <span>Решено</span>
                   </button>
                   <button
                     type="button"
@@ -714,13 +735,13 @@ export default function OperatorWorkspace({ user }) {
                     className="py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center justify-center space-x-1 shadow-xs"
                   >
                     <XCircle className="w-3.5 h-3.5" />
-                    <span>Не решено (L2)</span>
+                    <span>Не решено</span>
                   </button>
                 </div>
               </div>
 
               {/* AI Triage & Personalized Setup Card */}
-              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2.5 shadow-xs">
+              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
                 <div className="flex items-center justify-between text-xs font-semibold text-zinc-900 dark:text-zinc-200">
                   <span className="flex items-center space-x-1.5">
                     <Bot className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
@@ -730,7 +751,7 @@ export default function OperatorWorkspace({ user }) {
                     type="button"
                     onClick={handleAiTriage}
                     disabled={aiLoading}
-                    className="px-2.5 py-1 rounded-md bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-750 text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-700 transition-colors shadow-xs"
+                    className="px-2.5 py-1 rounded-md bg-white dark:bg-zinc-800 hover:bg-zinc-100 text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-700 transition-colors shadow-xs"
                   >
                     Заполнить по тексту
                   </button>
@@ -743,7 +764,6 @@ export default function OperatorWorkspace({ user }) {
                   </div>
                 )}
 
-                {/* Direct 1-click button to send personalized AI setup guide to customer */}
                 <button
                   type="button"
                   onClick={handleSendAiSetup}
@@ -751,11 +771,11 @@ export default function OperatorWorkspace({ user }) {
                   className="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
                 >
                   <Wrench className="w-3.5 h-3.5" />
-                  <span>Отправить настройку клиенту в чат</span>
+                  <span>Отправить настройку клиенту</span>
                 </button>
               </div>
 
-              {/* Grouped Form Fields */}
+              {/* Grouped Form Fields Pattern */}
               <div className="space-y-3.5 text-xs">
                 {/* Classification */}
                 <div className="space-y-1">
@@ -788,7 +808,7 @@ export default function OperatorWorkspace({ user }) {
                   </div>
                 )}
 
-                {/* Environment */}
+                {/* Environment (Device & Operator) */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <label className="text-zinc-700 dark:text-zinc-300 font-semibold font-mono">2. Устройство</label>
@@ -844,7 +864,7 @@ export default function OperatorWorkspace({ user }) {
                       <option value="P0">P0 (Авария)</option>
                       <option value="P1">P1 (Критичная)</option>
                       <option value="P2">P2 (Стандартная)</option>
-                      <option value="P3">P3 (Инструкция / FAQ)</option>
+                      <option value="P3">P3 (Инструкция)</option>
                     </select>
                   </div>
                 </div>
@@ -878,7 +898,7 @@ export default function OperatorWorkspace({ user }) {
                     type="text"
                     value={passport.result || ''}
                     onChange={(e) => setPassport({ ...passport, result: e.target.value })}
-                    placeholder="Решено сменой протокола / сервера..."
+                    placeholder="Решено сменой протокола..."
                     className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
                   />
                 </div>
@@ -918,7 +938,7 @@ export default function OperatorWorkspace({ user }) {
                 </div>
               </div>
 
-              {/* VPN Key Inspector Card with Status Pill */}
+              {/* VPN Key Inspector Card */}
               <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
                 <div className="flex items-center justify-between text-xs font-bold text-zinc-900 dark:text-zinc-200">
                   <span className="flex items-center space-x-1.5">
@@ -930,7 +950,7 @@ export default function OperatorWorkspace({ user }) {
 
                 {vpnKeys.length > 0 ? (
                   vpnKeys.map((k) => (
-                    <div key={k.id} className="bg-white dark:bg-zinc-950 p-3 rounded-lg border border-zinc-200 dark:border-zinc-850 space-y-1.5 text-xs shadow-xs">
+                    <div key={k.id} className="bg-white dark:bg-zinc-950 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-850 space-y-1.5 text-xs shadow-xs">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-zinc-900 dark:text-white font-mono">{k.server} • {k.protocol}</span>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
@@ -942,7 +962,7 @@ export default function OperatorWorkspace({ user }) {
                         </span>
                       </div>
                       <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-200 dark:border-zinc-800 font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
-                        <span className="truncate max-w-[190px]">{k.key_string}</span>
+                        <span className="truncate max-w-[170px] sm:max-w-[190px]">{k.key_string}</span>
                         <button
                           onClick={() => handleCopyKeyString(k.key_string)}
                           className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors ml-1"

@@ -3,15 +3,46 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
-  body {
-    transition: background-color 0.2s ease, color 0.2s ease;
+  :root {
+    --bg-page: #09090b;
+    --bg-surface: #18181b;
+    --border-subtle: #27272a;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
   }
+
+  html, body {
+    min-height: 100dvh;
+    height: 100%;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  /* Prevent iOS zoom on input focus while keeping desktop crisp */
+  @media screen and (max-width: 767px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
+/* Inertia touch scrolling for mobile toolbars */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.touch-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* Light & Dark Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
