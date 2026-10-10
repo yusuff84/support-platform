@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  support-os:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: topbox-support-os
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - DEBUG=false
+      - HOST=0.0.0.0
+      - PORT=8080
+      - SECRET_KEY=${SECRET_KEY:-topbox-super-secret-key-prod-2025}
+      - DATABASE_PATH=/app/data/support_os.sqlite3
+      - VPN_DATABASE_URL=${VPN_DATABASE_URL:-}
+      - REDIS_URL=redis://support-redis:6379/0
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_OPERATOR_GROUP_ID=${TELEGRAM_OPERATOR_GROUP_ID:-0}
+      - INSTAGRAM_VERIFY_TOKEN=${INSTAGRAM_VERIFY_TOKEN:-topbox_ig_verify_token}
+      - INSTAGRAM_ACCESS_TOKEN=${INSTAGRAM_ACCESS_TOKEN:-}
+      - TOTAL_USER_BASE=40000
+      - WORK_HOURS_START_MSK=9
+      - WORK_HOURS_END_MSK=20
+    volumes:
+      - support_data:/app/data
+    depends_on:
+      - support-redis
+
+  support-redis:
+    image: redis:alpine
+    container_name: topbox-support-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+volumes:
+  support_data:
+  redis_data:
