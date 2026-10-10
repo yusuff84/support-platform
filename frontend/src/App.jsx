@@ -91,7 +91,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-150">
+    <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-150">
       <Header
         user={user}
         currentTab={currentTab}
@@ -104,12 +104,12 @@ export default function App() {
         hideMobileBottomBar={currentTab === 'workspace' && mobileChatOpen}
       />
 
-      <main className="flex-1 overflow-x-hidden min-h-0 flex flex-col">
-        {currentTab === 'dashboard' && <DirectorDashboard />}
+      <main className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
+        {currentTab === 'dashboard' && <div className="h-full overflow-y-auto"><DirectorDashboard /></div>}
         {currentTab === 'workspace' && <OperatorWorkspace user={user} onMobileChatChange={setMobileChatOpen} />}
-        {currentTab === 'problems' && <ProblemRegisterView user={user} />}
-        {currentTab === 'knowledge' && <KnowledgeBaseView user={user} />}
-        {currentTab === 'settings' && <SystemSettingsView user={user} />}
+        {currentTab === 'problems' && <div className="h-full overflow-y-auto"><ProblemRegisterView user={user} /></div>}
+        {currentTab === 'knowledge' && <div className="h-full overflow-y-auto"><KnowledgeBaseView user={user} /></div>}
+        {currentTab === 'settings' && <div className="h-full overflow-y-auto"><SystemSettingsView user={user} /></div>}
       </main>
     </div>
   );
