@@ -225,4 +225,33 @@ async def test_resolve_and_escalate_buttons():
         data_setup = setup_res.json()
         assert "Помощник по настройке" in data_setup["message_text"]
 
+@pytest.mark.asyncio
+async def test_instagram_key_restrictions():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        login_res = await ac.post("/api/auth/login", data={"username": "agent", "password": "agent123"})
+        token = login_res.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Find Instagram ticket (e.g. ticket 3 or 5)
+        tickets_res = await ac.get("/api/tickets?channel=instagram", headers=headers)
+        assert tickets_res.status_code == 200
+        ig_tickets = tickets_res.json()
+        assert len(ig_tickets) > 0
+        ig_id = ig_tickets[0]["id"]
+
+        # 1. Direct send-key MUST fail for Instagram ticket
+        ig_send_res = await ac.post(f"/api/tickets/{ig_id}/send-key", headers=headers)
+        assert ig_send_res.status_code == 400
+        assert "только для Telegram" in ig_send_res.json()["detail"]
+
+        # 2. Recreate-key MUST fail for Instagram ticket
+        ig_recreate_res = await ac.post(f"/api/tickets/{ig_id}/recreate-key", json={"protocol": "Vless"}, headers=headers)
+        assert ig_recreate_res.status_code == 400
+        assert "через Telegram" in ig_recreate_res.json()["detail"]
+
+        # 3. Send Telegram bot link to Instagram customer MUST succeed
+        link_res = await ac.post(f"/api/tickets/{ig_id}/send-tg-link", headers=headers)
+        assert link_res.status_code == 200
+        assert "t.me/topvpnhelp_bot" in link_res.json()["message_text"]
+
 

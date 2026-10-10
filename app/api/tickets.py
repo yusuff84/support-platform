@@ -343,12 +343,19 @@ async def send_user_key(
     current_user: dict = Depends(get_current_user),
     db: aiosqlite.Connection = Depends(get_db)
 ):
-    """Fetches user VPN key and sends it directly to the customer chat."""
+    """Fetches user VPN key and sends it directly to the customer chat (TELEGRAM ONLY)."""
     from app.vpn.adapter import get_vpn_client_keys
     async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
         ticket = await cursor.fetchone()
         if not ticket:
             raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    # Enforce Telegram channel restriction for VPN key operations
+    if ticket["channel"] != "telegram":
+        raise HTTPException(
+            status_code=400,
+            detail="Выдача ключей доступна только для Telegram-бота (@topvpnhelp_bot). Для Instagram доступна только отправка ссылки на бота."
+        )
 
     keys = await get_vpn_client_keys(ticket["channel_user_id"], db)
     if not keys:
@@ -376,12 +383,19 @@ async def recreate_user_key(
     current_user: dict = Depends(get_current_user),
     db: aiosqlite.Connection = Depends(get_db)
 ):
-    """Re-creates / resets connection key for the user and posts update."""
+    """Re-creates / resets connection key for the user (TELEGRAM ONLY)."""
     from app.vpn.adapter import recreate_vpn_client_key
     async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
         ticket = await cursor.fetchone()
         if not ticket:
             raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    # Enforce Telegram channel restriction for key replacement/reset
+    if ticket["channel"] != "telegram":
+        raise HTTPException(
+            status_code=400,
+            detail="Замена и пересоздание ключей производятся исключительно через Telegram-бота (@topvpnhelp_bot). Для Instagram данное действие недоступно."
+        )
 
     new_key = await recreate_vpn_client_key(
         user_id=ticket["channel_user_id"],
@@ -404,6 +418,26 @@ async def recreate_user_key(
     await db.commit()
 
     msg = MessageCreate(ticket_id=ticket_id, message_text=result_text, sender_type="operator")
+    return await send_ticket_message(ticket_id, msg, current_user, db)
+
+@router.post("/{ticket_id}/send-tg-link")
+async def send_tg_bot_link_endpoint(
+    ticket_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    """Sends official Telegram bot link to Instagram customer for key issuance."""
+    async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
+        ticket = await cursor.fetchone()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    text = (
+        "🔑 Для автоматической выдачи, проверки подписки и замены вашего VPN-ключа перейдите в нашего официального Telegram-бота:\n\n"
+        "👉 https://t.me/topvpnhelp_bot (команда /start)\n\n"
+        "Бот моментально проверит ваш статус и выдаст активный ключ доступа."
+    )
+    msg = MessageCreate(ticket_id=ticket_id, message_text=text, sender_type="operator")
     return await send_ticket_message(ticket_id, msg, current_user, db)
 
 @router.post("/{ticket_id}/send-guide")
@@ -565,12 +599,21 @@ async def send_ai_setup_guide(
         msgs = [ticket["problem"] or "Помощь в настройке VPN"]
 
     triage_res = await auto_triage_ticket(msgs)
-    guide_text = (
-        f"🛠 Помощник по настройке TOPBOX VPN ({triage_res.device or 'ваше устройство'}):\n\n"
-        f"{triage_res.setup_guide or '1. Скопируйте ключ.\n2. Вставьте в приложение Amnezia / Happ.\n3. Нажмите Подключить.'}\n\n"
-        f"Диагноз системы: {triage_res.diagnostic_summary}\n"
-        f"Если после выполнения этих шагов соединение не установилось — напишите нам, и оператор сразу подключится!"
-    )
+    if ticket["channel"] == "instagram":
+        guide_text = (
+            f"🛠 Помощник по настройке TOPBOX VPN ({triage_res.device or 'ваше устройство'}):\n\n"
+            "1. Перейдите в нашего официального Telegram-бота для получения и привязки вашего ключа: https://t.me/topvpnhelp_bot (нажмите /start).\n"
+            f"2. {triage_res.setup_guide or 'Скопируйте ключ и вставьте в приложение Amnezia VPN или Happ.'}\n\n"
+            f"Диагноз системы: {triage_res.diagnostic_summary}\n"
+            "Если после выполнения этих шагов останутся вопросы — напишите сюда, оператор на связи!"
+        )
+    else:
+        guide_text = (
+            f"🛠 Помощник по настройке TOPBOX VPN ({triage_res.device or 'ваше устройство'}):\n\n"
+            f"{triage_res.setup_guide or '1. Скопируйте ключ.\n2. Вставьте в приложение Amnezia / Happ.\n3. Нажмите Подключить.'}\n\n"
+            f"Диагноз системы: {triage_res.diagnostic_summary}\n"
+            f"Если после выполнения этих шагов соединение не установилось — напишите нам, и оператор сразу подключится!"
+        )
 
     msg = MessageCreate(ticket_id=ticket_id, message_text=guide_text, sender_type="ai")
     return await send_ticket_message(ticket_id, msg, current_user, db)
