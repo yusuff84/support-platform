@@ -6,9 +6,10 @@ import {
   Users, 
   Check, 
   ShieldAlert, 
-  RefreshCw,
-  Plus,
-  Play
+  RefreshCw, 
+  Plus, 
+  Play,
+  Info 
 } from 'lucide-react';
 import { InstagramIcon } from './Icons';
 import { api } from '../api';
@@ -94,7 +95,7 @@ export default function SystemSettingsView({ user }) {
 
   const handleSimulate = async (e) => {
     e.preventDefault();
-    setSimStatus('Отправка запроса...');
+    setSimStatus('Отправка запроса в конвейер...');
     try {
       const res = await api.webhooks.simulate({
         channel: simChannel,
@@ -102,7 +103,7 @@ export default function SystemSettingsView({ user }) {
         user_name: simUserName,
         message_text: simText
       });
-      setSimStatus(`Успешно! Тикет создан: #${res.ticket_id || res.user_id}`);
+      setSimStatus(`Успешно! Тикет создан/обновлен в очереди: #${res.ticket_id || res.user_id}`);
       setTimeout(() => setSimStatus(''), 4000);
     } catch (err) {
       setSimStatus(`Ошибка: ${err.message}`);
@@ -122,79 +123,81 @@ export default function SystemSettingsView({ user }) {
   };
 
   if (loading) {
-    return <div className="p-12 text-center text-slate-500 text-xs">Загрузка параметров системы...</div>;
+    return <div className="p-12 text-center text-zinc-400 text-xs font-mono">Загрузка параметров системы...</div>;
   }
 
   return (
-    <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-7">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-zinc-800 border-b">
         <div>
           <div className="flex items-center space-x-2.5">
-            <h1 className="text-lg md:text-xl font-bold tracking-tight text-slate-100">СИСТЕМНЫЕ НАСТРОЙКИ И ИНТЕГРАЦИИ</h1>
-            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-              Доступ: Суперрут
+            <h1 className="text-base md:text-lg font-bold tracking-tight text-zinc-100 uppercase font-mono">
+              СИСТЕМНЫЕ НАСТРОЙКИ И ИНТЕГРАЦИИ
+            </h1>
+            <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-zinc-900 text-zinc-300 border border-zinc-750">
+              Superroot Level
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Конфигурация Telegram-бота, Instagram Webhooks, пула моделей OpenRouter, базы VPN и учетных записей.
+          <p className="text-xs text-zinc-400 mt-1">
+            <strong>Обоснование:</strong> Централизованное управление токенами, пулом ИИ-моделей и внешней базой VPN без правок кода на сервере.
           </p>
         </div>
 
         {savedNotice && (
-          <div className="flex items-center space-x-1.5 px-3 py-1 rounded bg-slate-800 border border-slate-700 text-slate-200 text-xs font-medium">
-            <Check className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Параметры успешно обновлены</span>
+          <div className="flex items-center space-x-1.5 px-3 py-1 rounded bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs font-mono font-medium">
+            <Check className="w-3.5 h-3.5 text-zinc-200" />
+            <span>Параметры успешно сохранены</span>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* SECTION 1: OpenRouter Free Model Pool */}
-        <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/60">
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded p-4 space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
             <div className="flex items-center space-x-2">
-              <Key className="w-4 h-4 text-slate-400" />
-              <h2 className="text-xs font-semibold text-slate-200 uppercase tracking-wide">OpenRouter AI & Пул моделей</h2>
+              <Key className="w-4 h-4 text-zinc-400" />
+              <h2 className="text-xs font-bold text-zinc-200 uppercase tracking-wide font-mono">
+                OpenRouter AI: Пул бесплатных моделей
+              </h2>
             </div>
-            <span className="text-[11px] text-slate-400 font-mono">
-              Статус: <strong className={settings?.openrouter?.has_api_key ? 'text-emerald-400' : 'text-slate-400'}>
-                {settings?.openrouter?.has_api_key ? 'Активен' : 'Локальный эвристический'}
-              </strong>
+            <span className="text-[11px] text-zinc-400 font-mono">
+              Режим: <strong className="text-zinc-200">{settings?.openrouter?.has_api_key ? 'Внешний API' : 'Локальный эвристический'}</strong>
             </span>
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-3 text-xs">
             <div>
-              <label className="text-slate-400 font-medium">OpenRouter API Key</label>
+              <label className="text-zinc-400 font-medium">OpenRouter API Key</label>
               <input
                 type="password"
                 placeholder={settings?.openrouter?.masked_key ? `Текущий: ${settings.openrouter.masked_key}` : 'sk-or-v1-...'}
                 value={openrouterKey}
                 onChange={(e) => setOpenrouterKey(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
+                className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white font-mono"
               />
-              <span className="text-[10px] text-slate-500 mt-0.5 block">
-                Ключ от сервиса openrouter.ai для вызова LLM.
+              <span className="text-[10px] text-zinc-400 mt-0.5 block">
+                Ключ от сервиса OpenRouter. Если ключ не задан, работает встроенный эвристический триаж.
               </span>
             </div>
 
             <div>
-              <label className="text-slate-400 font-medium">Пул бесплатных моделей (очередь авто-failover)</label>
+              <label className="text-zinc-400 font-medium font-mono">Пул моделей (Очередь авто-failover при коде 429)</label>
               <textarea
                 rows="5"
                 value={modelPoolStr}
                 onChange={(e) => setModelPoolStr(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono text-[11px]"
+                className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white font-mono text-[11px]"
               />
-              <span className="text-[10px] text-slate-500 mt-0.5 block">
-                При 429 или таймауте система автоматически переключается на следующую модель по списку.
+              <span className="text-[10px] text-zinc-400 mt-0.5 block">
+                При Rate Limit или 503 запрос мгновенно передается следующей бесплатной модели в списке.
               </span>
             </div>
 
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium transition-colors"
+              className="px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-medium transition-colors"
             >
               Сохранить параметры ИИ
             </button>
@@ -202,20 +205,22 @@ export default function SystemSettingsView({ user }) {
         </div>
 
         {/* SECTION 2: Channels (Telegram & Instagram) & VPN DB */}
-        <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/60">
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded p-4 space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
             <div className="flex items-center space-x-2">
-              <Send className="w-4 h-4 text-slate-400" />
-              <h2 className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Каналы связи и База VPN</h2>
+              <Send className="w-4 h-4 text-zinc-400" />
+              <h2 className="text-xs font-bold text-zinc-200 uppercase tracking-wide font-mono">
+                Каналы обращений и База данных VPN
+              </h2>
             </div>
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-3 text-xs">
             <div>
-              <label className="text-slate-400 font-medium flex items-center justify-between">
+              <label className="text-zinc-400 font-medium flex items-center justify-between">
                 <span>Telegram Bot Token (@topvpnhelp_bot)</span>
-                <span className="text-slate-400 text-[10px] font-mono">
-                  {settings?.telegram?.is_configured ? 'Подключен' : 'Режим симуляции'}
+                <span className="text-zinc-400 text-[10px] font-mono">
+                  {settings?.telegram?.is_configured ? 'Подключен' : 'Локальный режим'}
                 </span>
               </label>
               <input
@@ -223,26 +228,26 @@ export default function SystemSettingsView({ user }) {
                 placeholder={settings?.telegram?.masked_token ? `Текущий: ${settings.telegram.masked_token}` : '123456789:ABCDefgh...'}
                 value={tgToken}
                 onChange={(e) => setTgToken(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
+                className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white font-mono"
               />
             </div>
 
             <div>
-              <label className="text-slate-400 font-medium">Telegram ID супергруппы операторов</label>
+              <label className="text-zinc-400 font-medium font-mono">Telegram ID группы операторов (Форумные топики)</label>
               <input
                 type="text"
                 placeholder="-100123456789"
                 value={tgGroupId}
                 onChange={(e) => setTgGroupId(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
+                className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white font-mono"
               />
             </div>
 
             <div>
-              <label className="text-slate-400 font-medium flex items-center justify-between">
+              <label className="text-zinc-400 font-medium flex items-center justify-between">
                 <span>Instagram Graph API Access Token</span>
-                <span className="text-slate-400 text-[10px] font-mono">
-                  {settings?.instagram?.is_configured ? 'Подключен' : 'Режим симуляции'}
+                <span className="text-zinc-400 text-[10px] font-mono">
+                  {settings?.instagram?.is_configured ? 'Подключен' : 'Локальный режим'}
                 </span>
               </label>
               <input
@@ -250,30 +255,30 @@ export default function SystemSettingsView({ user }) {
                 placeholder="EAAG..."
                 value={igToken}
                 onChange={(e) => setIgToken(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
+                className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white font-mono"
               />
             </div>
 
             <div>
-              <label className="text-slate-400 font-medium flex items-center justify-between">
+              <label className="text-zinc-400 font-medium flex items-center justify-between">
                 <span>Строка подключения к базе VPN (databasetop)</span>
-                <span className="text-slate-400 text-[10px] font-mono">{settings?.vpn_database?.status}</span>
+                <span className="text-zinc-400 text-[10px] font-mono">{settings?.vpn_database?.status}</span>
               </label>
               <input
                 type="text"
                 placeholder="postgresql://user:pass@host:5432/databasetop"
                 value={vpnDbUrl}
                 onChange={(e) => setVpnDbUrl(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
+                className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white font-mono"
               />
-              <span className="text-[10px] text-slate-500 mt-0.5 block">
+              <span className="text-[10px] text-zinc-400 mt-0.5 block">
                 {settings?.vpn_database?.message}
               </span>
             </div>
 
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium transition-colors"
+              className="px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-medium transition-colors"
             >
               Сохранить каналы
             </button>
@@ -282,89 +287,91 @@ export default function SystemSettingsView({ user }) {
       </div>
 
       {/* SECTION 3: Live Incoming Message Simulator */}
-      <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 space-y-4">
-        <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/60">
+      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-4 space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
           <div className="flex items-center space-x-2">
-            <Play className="w-4 h-4 text-slate-400" />
-            <h2 className="text-xs font-semibold text-slate-200 uppercase tracking-wide">
+            <Play className="w-4 h-4 text-zinc-400" />
+            <h2 className="text-xs font-bold text-zinc-200 uppercase tracking-wide font-mono">
               Симулятор входящих обращений (Telegram & Instagram)
             </h2>
           </div>
-          <span className="text-xs text-slate-400">Тестирование пайплайна в 1 клик</span>
+          <span className="text-xs text-zinc-400 font-mono">
+            Обоснование: мгновенное тестирование AI-триажа и паспорта без внешних вебхуков
+          </span>
         </div>
 
         <form onSubmit={handleSimulate} className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs items-end">
           <div>
-            <label className="text-slate-400 font-medium">Канал обращения</label>
+            <label className="text-zinc-400 font-medium">Канал</label>
             <select
               value={simChannel}
               onChange={(e) => setSimChannel(e.target.value)}
-              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
+              className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white font-mono"
             >
-              <option value="telegram">Telegram</option>
-              <option value="instagram">Instagram</option>
+              <option value="telegram">Telegram (@topvpnhelp_bot)</option>
+              <option value="instagram">Instagram Direct</option>
             </select>
           </div>
 
           <div>
-            <label className="text-slate-400 font-medium">Имя абонента</label>
+            <label className="text-zinc-400 font-medium">Имя абонента</label>
             <input
               type="text"
               value={simUserName}
               onChange={(e) => setSimUserName(e.target.value)}
-              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
+              className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white"
             />
           </div>
 
           <div>
-            <label className="text-slate-400 font-medium">ID абонента</label>
+            <label className="text-zinc-400 font-medium font-mono">ID абонента</label>
             <input
               type="text"
               value={simUserId}
               onChange={(e) => setSimUserId(e.target.value)}
-              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
+              className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white font-mono"
             />
           </div>
 
           <button
             type="submit"
-            className="px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium flex items-center justify-center space-x-1.5 transition-colors"
+            className="px-4 py-2 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-medium flex items-center justify-center space-x-1.5 transition-colors"
           >
-            <Play className="w-3.5 h-3.5 text-slate-400" />
+            <Play className="w-3.5 h-3.5 text-zinc-400" />
             <span>Смоделировать обращение</span>
           </button>
 
           <div className="md:col-span-4">
-            <label className="text-slate-400 font-medium">Текст сообщения</label>
+            <label className="text-zinc-400 font-medium">Текст сообщения от пользователя</label>
             <input
               type="text"
               value={simText}
               onChange={(e) => setSimText(e.target.value)}
               placeholder="Например: Не работает VPN на iPhone через Wi-Fi Ростелеком..."
-              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
+              className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white"
             />
           </div>
         </form>
 
         {simStatus && (
-          <div className="p-2.5 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-300 font-mono">
+          <div className="p-2.5 rounded bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 font-mono">
             {simStatus}
           </div>
         )}
       </div>
 
       {/* SECTION 4: Staff Users & Roles */}
-      <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 space-y-4">
-        <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/60">
+      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-4 space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
           <div className="flex items-center space-x-2">
-            <Users className="w-4 h-4 text-slate-400" />
-            <h2 className="text-xs font-semibold text-slate-200 uppercase tracking-wide">
+            <Users className="w-4 h-4 text-zinc-400" />
+            <h2 className="text-xs font-bold text-zinc-200 uppercase tracking-wide font-mono">
               Сотрудники и роли (RBAC)
             </h2>
           </div>
           <button
             onClick={() => setShowUserModal(true)}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-200 transition-colors"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-medium text-zinc-200 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Добавить сотрудника</span>
@@ -372,32 +379,32 @@ export default function SystemSettingsView({ user }) {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse font-mono">
             <thead>
-              <tr className="border-b border-slate-800/80 text-slate-400 font-medium bg-slate-950/60">
+              <tr className="border-b border-zinc-800 text-zinc-400 font-medium bg-zinc-950">
                 <th className="py-2.5 px-3">Логин</th>
-                <th className="py-2.5 px-3">Имя сотрудника</th>
+                <th className="py-2.5 px-3 font-sans">Имя сотрудника</th>
                 <th className="py-2.5 px-3">Email</th>
-                <th className="py-2.5 px-3">Роль доступа</th>
-                <th className="py-2.5 px-3">Статус</th>
+                <th className="py-2.5 px-3 font-sans">Роль доступа</th>
+                <th className="py-2.5 px-3 font-sans">Статус</th>
                 <th className="py-2.5 px-3 text-right">Последний вход</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-900 text-slate-300">
+            <tbody className="divide-y divide-zinc-900 text-zinc-300">
               {users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-950/40 transition-colors">
-                  <td className="py-2.5 px-3 font-mono font-medium text-slate-200">{u.username}</td>
-                  <td className="py-2.5 px-3 text-slate-100">{u.full_name}</td>
-                  <td className="py-2.5 px-3 text-slate-400">{u.email || '—'}</td>
-                  <td className="py-2.5 px-3">
-                    <span className="px-2 py-0.5 rounded text-[11px] bg-slate-800 border border-slate-750 text-slate-300 font-mono">
+                <tr key={u.id} className="hover:bg-zinc-950/60 transition-colors">
+                  <td className="py-2.5 px-3 font-bold text-zinc-100">{u.username}</td>
+                  <td className="py-2.5 px-3 font-sans text-zinc-200">{u.full_name}</td>
+                  <td className="py-2.5 px-3 text-zinc-400">{u.email || '—'}</td>
+                  <td className="py-2.5 px-3 font-sans">
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-zinc-900 border border-zinc-800 text-zinc-200 font-mono">
                       {u.role}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3">
-                    <span className="text-slate-300 font-medium">Активен</span>
+                  <td className="py-2.5 px-3 font-sans">
+                    <span className="text-zinc-300 font-medium">Активен</span>
                   </td>
-                  <td className="py-2.5 px-3 text-right text-slate-500 font-mono">
+                  <td className="py-2.5 px-3 text-right text-zinc-400 font-mono">
                     {u.last_login ? new Date(u.last_login).toLocaleString() : '—'}
                   </td>
                 </tr>
@@ -409,13 +416,13 @@ export default function SystemSettingsView({ user }) {
 
       {/* Modal: Create User */}
       {showUserModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-800">
-              <h3 className="font-semibold text-xs text-slate-200 uppercase tracking-wide">Добавить сотрудника</h3>
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded max-w-md w-full p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2.5 border-b border-zinc-800">
+              <h3 className="font-bold text-xs text-zinc-200 uppercase tracking-wide font-mono">Добавить сотрудника</h3>
               <button
                 onClick={() => setShowUserModal(false)}
-                className="text-slate-400 hover:text-white text-xs px-2 py-0.5 rounded bg-slate-800"
+                className="text-zinc-400 hover:text-white text-xs px-2 py-0.5 rounded bg-zinc-800"
               >
                 Отмена
               </button>
@@ -423,33 +430,33 @@ export default function SystemSettingsView({ user }) {
 
             <form onSubmit={handleCreateUser} className="space-y-3 text-xs">
               <div>
-                <label className="text-slate-400 font-medium">Логин</label>
+                <label className="text-zinc-400 font-medium font-mono">Логин</label>
                 <input
                   type="text"
                   required
                   value={newUser.username}
                   onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
+                  className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white font-mono"
                 />
               </div>
 
               <div>
-                <label className="text-slate-400 font-medium">Полное имя</label>
+                <label className="text-zinc-400 font-medium">Полное имя</label>
                 <input
                   type="text"
                   required
                   value={newUser.full_name}
                   onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
-                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
+                  className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white"
                 />
               </div>
 
               <div>
-                <label className="text-slate-400 font-medium">Роль</label>
+                <label className="text-zinc-400 font-medium font-mono">Роль</label>
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
+                  className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white font-mono"
                 >
                   <option value="support_agent">support_agent (Менеджер саппорта)</option>
                   <option value="support_lead">support_lead (Руководитель саппорта)</option>
@@ -459,13 +466,13 @@ export default function SystemSettingsView({ user }) {
               </div>
 
               <div>
-                <label className="text-slate-400 font-medium">Пароль</label>
+                <label className="text-zinc-400 font-medium">Пароль</label>
                 <input
                   type="password"
                   required
                   value={newUser.password}
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
+                  className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-white"
                 />
               </div>
 
@@ -473,13 +480,13 @@ export default function SystemSettingsView({ user }) {
                 <button
                   type="button"
                   onClick={() => setShowUserModal(false)}
-                  className="px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 font-medium"
+                  className="px-3 py-1.5 rounded bg-zinc-800 text-zinc-300 font-medium"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium"
+                  className="px-4 py-1.5 rounded bg-zinc-100 hover:bg-white text-zinc-950 font-bold"
                 >
                   Создать
                 </button>

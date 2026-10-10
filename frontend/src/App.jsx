@@ -80,8 +80,8 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -91,7 +91,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
       <Header
         user={user}
         currentTab={currentTab}
@@ -100,7 +100,7 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 overflow-x-hidden">
+      <main className="flex-1 overflow-x-hidden bg-zinc-950">
         {currentTab === 'dashboard' && <DirectorDashboard />}
         {currentTab === 'workspace' && <OperatorWorkspace user={user} />}
         {currentTab === 'problems' && <ProblemRegisterView user={user} />}
