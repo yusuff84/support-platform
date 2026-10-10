@@ -32,10 +32,13 @@ import { api } from '../api';
 // Predefined Canned Responses (Быстрые ответы с учетом канала)
 const getQuickReplies = (channel) => {
   const isTG = channel === 'telegram';
-  return [
-    {
-      category: isTG ? '🔑 Ключи и подписка (Telegram)' : '🔑 Получение ключа (Только через TG-бота)',
-      items: isTG ? [
+  const categories = [];
+
+  // Keys & Subscription are ONLY for Telegram! For Instagram, completely omitted!
+  if (isTG) {
+    categories.push({
+      category: '🔑 Ключи и подписка (Telegram)',
+      items: [
         {
           title: 'Выдать действующий ключ',
           text: 'Здравствуйте! Ваш действующий ключ доступа и инструкции отправлены выше. Пожалуйста, проверьте и подключитесь.'
@@ -48,17 +51,12 @@ const getQuickReplies = (channel) => {
           title: 'Подтверждение продления',
           text: 'Оплата получена и подтверждена. Ваша подписка успешно продлена на 30 дней. Приятного пользования!'
         }
-      ] : [
-        {
-          title: 'Ссылка на Telegram-бота для выдачи ключа',
-          text: 'Здравствуйте! Для автоматической выдачи, привязки и замены вашего VPN-ключа перейдите в нашего официального Telegram-бота: https://t.me/topvpnhelp_bot (команда /start). Бот моментально выдаст действующий ключ!'
-        },
-        {
-          title: 'Подтверждение продления подписки',
-          text: 'Оплата получена и подтверждена. Ваша подписка успешно продлена на 30 дней. Для обновления и проверки ключа перейдите в Telegram-бота: https://t.me/topvpnhelp_bot.'
-        }
       ]
-    },
+    });
+  }
+
+  // Common instruction categories for all channels
+  categories.push(
     {
       category: '📱 Инструкции по подключению',
       items: [
@@ -106,7 +104,9 @@ const getQuickReplies = (channel) => {
         }
       ]
     }
-  ];
+  );
+
+  return categories;
 };
 
 export default function OperatorWorkspace({ user, onMobileChatChange }) {
@@ -755,37 +755,26 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                     </button>
                   </div>
 
-                  <div className="hidden sm:flex items-center space-x-1.5">
-                    {selectedTicket.channel === 'telegram' ? (
-                      <>
-                        <button
-                          onClick={handleSendKey}
-                          className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
-                          title="Отправить действующий ключ абоненту в Telegram"
-                        >
-                          <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                          <span>Ключ</span>
-                        </button>
-                        <button
-                          onClick={handleRecreateKey}
-                          className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
-                          title="Сбросить и выпустить ключ в Telegram"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                          <span>Сброс</span>
-                        </button>
-                      </>
-                    ) : (
+                  {selectedTicket.channel === 'telegram' && (
+                    <div className="hidden sm:flex items-center space-x-1.5">
                       <button
-                        onClick={handleSendTgBotLink}
+                        onClick={handleSendKey}
                         className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
-                        title="Отправить клиенту в Direct ссылку на Telegram-бота для выдачи ключа"
+                        title="Отправить действующий ключ абоненту в Telegram"
                       >
-                        <TelegramIcon className="w-3.5 h-3.5 text-sky-500" />
-                        <span>Ссылка на TG-бота</span>
+                        <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                        <span>Ключ</span>
                       </button>
-                    )}
-                  </div>
+                      <button
+                        onClick={handleRecreateKey}
+                        className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs flex items-center space-x-1"
+                        title="Сбросить и выпустить ключ в Telegram"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                        <span>Сброс</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -927,7 +916,7 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                   <span>Ответы</span>
                   </button>
 
-                  {selectedTicket.channel === 'telegram' ? (
+                  {selectedTicket.channel === 'telegram' && (
                     <>
                       <button
                         type="button"
@@ -947,15 +936,6 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                         <span>Сброс</span>
                       </button>
                     </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleSendTgBotLink}
-                      className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 text-xs font-medium flex items-center space-x-1 font-mono"
-                    >
-                      <TelegramIcon className="w-3 h-3 text-sky-500" />
-                      <span>Ссылка на TG-бота</span>
-                    </button>
                   )}
 
                 <button
@@ -1342,8 +1322,8 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                 </div>
               </div>
 
-              {/* VPN Key Inspector Card */}
-              {selectedTicket.channel === 'telegram' ? (
+              {/* VPN Key Inspector Card - ONLY FOR TELEGRAM */}
+              {selectedTicket.channel === 'telegram' && (
                 <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
                   <div className="flex items-center justify-between text-xs font-bold text-zinc-900 dark:text-zinc-200">
                     <span className="flex items-center space-x-1.5">
@@ -1387,24 +1367,6 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                       Для данного абонента нет ключей в базе
                     </div>
                   )}
-                </div>
-              ) : (
-                <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 space-y-2.5 shadow-xs">
-                  <div className="flex items-center space-x-1.5 text-xs font-bold text-zinc-900 dark:text-zinc-200">
-                    <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                    <span>Управление ключами (Telegram Only)</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Выдача, замена и сброс ключей производятся через бота в Telegram (@topvpnhelp_bot). Для клиента из Instagram доступна быстрая отправка ссылки на бота.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleSendTgBotLink}
-                    className="w-full py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
-                  >
-                    <TelegramIcon className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                    <span>Отправить ссылку на бота клиенту в Direct</span>
-                  </button>
                 </div>
               )}
             </>
