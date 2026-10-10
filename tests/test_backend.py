@@ -197,3 +197,32 @@ async def test_vpn_keys_and_recreate():
         msg = recreate_res.json()
         assert "пересоздан" in msg["message_text"]
 
+@pytest.mark.asyncio
+async def test_resolve_and_escalate_buttons():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        login_res = await ac.post("/api/auth/login", data={"username": "agent", "password": "agent123"})
+        token = login_res.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 1. Resolve ticket
+        resolve_res = await ac.post("/api/tickets/1/resolve", headers=headers)
+        assert resolve_res.status_code == 200
+        data_res = resolve_res.json()
+        assert data_res["status"] == "resolved"
+        assert data_res["category"] == "Всё исправлено"
+
+        # 2. Escalate ticket
+        esc_res = await ac.post("/api/tickets/1/escalate", headers=headers)
+        assert esc_res.status_code == 200
+        data_esc = esc_res.json()
+        assert data_esc["status"] == "escalated"
+        assert data_esc["category"] == "Не решено"
+        assert data_esc["escalated_to_engineer"] is True
+
+        # 3. AI Setup helper
+        setup_res = await ac.post("/api/tickets/1/send-ai-setup", headers=headers)
+        assert setup_res.status_code == 200
+        data_setup = setup_res.json()
+        assert "Помощник по настройке" in data_setup["message_text"]
+
+

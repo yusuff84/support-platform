@@ -8,8 +8,10 @@ from app.models import AiTriageResult
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_TRIAGE_PROMPT = f"""Ты — аналитик и система классификации обращений техподдержки VPN-сервиса (40 000 абонентов).
-Твоя задача — извлечь данные обращения пользователя и заполнить «Паспорт тикета» в формате JSON.
+SYSTEM_TRIAGE_PROMPT = f"""Ты — интеллектуальный ассистент и система классификации обращений техподдержки VPN-сервиса (40 000 абонентов).
+Твоя задача:
+1. Точно извлечь данные обращения пользователя и заполнить «Паспорт тикета».
+2. Если у пользователя проблема или он не знает как настроить — сформировать готовую пошаговую инструкцию по настройке (setup_guide), чтобы абонент мог сразу всё настроить!
 
 Категории и допустимые подкатегории (выбери ровно одну категорию и соответствующую ей подкатегорию):
 1. «Не подключается»: [приложение, ключ, сервер, оператор, устройство]
@@ -43,6 +45,7 @@ SYSTEM_TRIAGE_PROMPT = f"""Ты — аналитик и система клас�
   "cause": "Предполагаемая причина",
   "severity": "P0/P1/P2/P3",
   "diagnostic_summary": "1-2 предложения диагноза для оператора",
+  "setup_guide": "Конкретная пошаговая инструкция для абонента: 1) Шаг 1, 2) Шаг 2, 3) Шаг 3...",
   "confidence": 0.95
 }}
 """
@@ -138,6 +141,17 @@ def heuristic_fallback_triage(text: str) -> AiTriageResult:
         cause = "Запрос активного ключа абонента"
         diag = "Запрос данных подписки и ключа подключения."
 
+    guide = "1. Скопируйте ваш персональный VPN-ключ.\n2. Откройте приложение (Amnezia / Happ / v2rayNG).\n3. Нажмите «Добавить из буфера» и выберите кнопку подключения."
+    if device == "iPhone":
+        guide = "1. Установите приложение Amnezia VPN или Happ из App Store.\n2. Скопируйте ключ доступа.\n3. Откройте приложение и нажмите «Добавить конфигурацию».\n4. Нажмите «Подключить» и разрешите добавление VPN профиля в iOS."
+    elif device == "Android":
+        guide = "1. Установите v2rayNG или Amnezia VPN из Google Play.\n2. Скопируйте ключ.\n3. Нажмите «+» вверху экрана ➔ «Импорт из буфера обмена».\n4. Выберите сервер и нажмите круглую кнопку подключения внизу."
+    elif device == "Windows":
+        guide = "1. Скачайте приложение Amnezia VPN для Windows.\n2. Запустите от имени администратора.\n3. Вставьте ключ и нажмите «Подключиться»."
+
+    if operator in ["МТС", "Мегафон"] and category == "Не подключается":
+        guide += "\n\nВажно: Сеть оператора может ограничивать старые протоколы. При ошибке переключите протокол на Vless-Reality или смените сервер на NL-02 / DE-01."
+
     return AiTriageResult(
         category=category,
         subcategory=subcategory,
@@ -148,6 +162,7 @@ def heuristic_fallback_triage(text: str) -> AiTriageResult:
         cause=cause,
         severity=severity,
         diagnostic_summary=diag,
+        setup_guide=guide,
         confidence=0.82
     )
 
@@ -165,7 +180,7 @@ async def auto_triage_ticket(messages: List[str]) -> AiTriageResult:
     result = await openrouter_client.chat_completion_with_fallback(
         messages=llm_messages,
         temperature=0.1,
-        max_tokens=600
+        max_tokens=700
     )
 
     if result.get("content"):
@@ -175,6 +190,11 @@ async def auto_triage_ticket(messages: List[str]) -> AiTriageResult:
             cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.MULTILINE)
             cleaned = re.sub(r"\s*```$", "", cleaned, flags=re.MULTILINE)
             data = json.loads(cleaned)
+
+            guide = data.get("setup_guide")
+            if not guide:
+                fb = heuristic_fallback_triage(combined_text)
+                guide = fb.setup_guide
 
             return AiTriageResult(
                 category=data.get("category"),
@@ -186,6 +206,7 @@ async def auto_triage_ticket(messages: List[str]) -> AiTriageResult:
                 cause=data.get("cause"),
                 severity=data.get("severity") or "P2",
                 diagnostic_summary=data.get("diagnostic_summary") or "Диагностика проведена ИИ.",
+                setup_guide=guide,
                 confidence=float(data.get("confidence", 0.90))
             )
         except Exception as e:

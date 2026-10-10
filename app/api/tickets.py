@@ -457,3 +457,120 @@ async def get_ticket_vpn_keys(
     keys = await get_vpn_client_keys(lookup_id, db)
     return {"user_id": lookup_id, "keys": keys}
 
+@router.post("/{ticket_id}/resolve")
+async def resolve_ticket(
+    ticket_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    """Marks ticket as resolved (Проблема решена) and sends confirmation to client."""
+    async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
+        ticket = await cursor.fetchone()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    created_dt = datetime.fromisoformat(str(ticket["created_at"]).replace(" ", "T"))
+    res_sec = int((datetime.now(timezone.utc) - created_dt.replace(tzinfo=timezone.utc)).total_seconds())
+
+    await db.execute(
+        """
+        UPDATE tickets SET
+            status = 'resolved',
+            category = 'Всё исправлено',
+            subcategory = COALESCE(subcategory, 'проблема решена'),
+            result = 'Проблема успешно решена',
+            instruction_helped = 1,
+            resolved_at = ?,
+            resolution_time_sec = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (now_iso, res_sec, ticket_id)
+    )
+    await db.commit()
+
+    # Send confirmation message to customer chat
+    res_text = (
+        "✅ Рады сообщить, что ваша проблема успешно решена!\n\n"
+        "Спасибо, что пользуетесь TOPBOX VPN. Если возникнут любые вопросы или понадобится помощь — мы всегда на связи!"
+    )
+    msg = MessageCreate(ticket_id=ticket_id, message_text=res_text, sender_type="operator")
+    await send_ticket_message(ticket_id, msg, current_user, db)
+
+    return await get_ticket(ticket_id, current_user, db)
+
+@router.post("/{ticket_id}/escalate")
+async def escalate_ticket(
+    ticket_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    """Marks ticket as not resolved / escalated to engineer L2."""
+    async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
+        ticket = await cursor.fetchone()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    await db.execute(
+        """
+        UPDATE tickets SET
+            status = 'escalated',
+            category = 'Не решено',
+            subcategory = 'техническая проблема требует инженера',
+            escalated_to_engineer = 1,
+            result = 'Техническая проблема требует вмешательства инженера L2',
+            instruction_helped = 0,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (ticket_id,)
+    )
+    await db.commit()
+
+    # Send escalation notification to customer chat
+    esc_text = (
+        "⚠️ Ваше обращение передано дежурному техническому инженеру для детального анализа инфраструктуры.\n\n"
+        "Специалист уже занимается проверкой узлов и серверов. Мы уведомим вас сразу, как только решение будет готово."
+    )
+    msg = MessageCreate(ticket_id=ticket_id, message_text=esc_text, sender_type="operator")
+    await send_ticket_message(ticket_id, msg, current_user, db)
+
+    return await get_ticket(ticket_id, current_user, db)
+
+@router.post("/{ticket_id}/send-ai-setup")
+async def send_ai_setup_guide(
+    ticket_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    """AI determines the problem and tailored setup steps, and sends step-by-step setup guide to client."""
+    from app.ai.triage import auto_triage_ticket
+    async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
+        ticket = await cursor.fetchone()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    # Fetch client messages
+    async with db.execute(
+        "SELECT message_text FROM ticket_messages WHERE ticket_id = ? AND sender_type = 'client' ORDER BY id ASC",
+        (ticket_id,)
+    ) as cursor:
+        rows = await cursor.fetchall()
+        msgs = [r["message_text"] for r in rows if r["message_text"]]
+
+    if not msgs:
+        msgs = [ticket["problem"] or "Помощь в настройке VPN"]
+
+    triage_res = await auto_triage_ticket(msgs)
+    guide_text = (
+        f"🛠 Помощник по настройке TOPBOX VPN ({triage_res.device or 'ваше устройство'}):\n\n"
+        f"{triage_res.setup_guide or '1. Скопируйте ключ.\n2. Вставьте в приложение Amnezia / Happ.\n3. Нажмите Подключить.'}\n\n"
+        f"Диагноз системы: {triage_res.diagnostic_summary}\n"
+        f"Если после выполнения этих шагов соединение не установилось — напишите нам, и оператор сразу подключится!"
+    )
+
+    msg = MessageCreate(ticket_id=ticket_id, message_text=guide_text, sender_type="ai")
+    return await send_ticket_message(ticket_id, msg, current_user, db)
+
+

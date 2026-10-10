@@ -262,6 +262,7 @@ class AiTriageResult(BaseModel):
     cause: Optional[str] = None
     severity: str = "P2"
     diagnostic_summary: str
+    setup_guide: Optional[str] = None
     confidence: float
 
 class AiSuggestionResult(BaseModel):

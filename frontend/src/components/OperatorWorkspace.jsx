@@ -9,10 +9,14 @@ import {
   MessageCircle, 
   RefreshCw, 
   Check, 
-  ShieldCheck, 
-  Copy,
-  Clock,
-  UserCheck
+  Copy, 
+  Wrench, 
+  CheckCircle2, 
+  XCircle, 
+  ArrowLeft, 
+  ChevronRight,
+  ShieldCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { InstagramIcon } from './Icons';
 import { api } from '../api';
@@ -24,6 +28,9 @@ export default function OperatorWorkspace({ user }) {
   const [messages, setMessages] = useState([]);
   const [vpnKeys, setVpnKeys] = useState([]);
   const [taxonomy, setTaxonomy] = useState(null);
+
+  // Mobile View Switcher Pattern: 'queue' | 'chat' | 'passport'
+  const [mobileView, setMobileView] = useState('queue');
 
   // Filters
   const [channelFilter, setChannelFilter] = useState('');
@@ -40,9 +47,10 @@ export default function OperatorWorkspace({ user }) {
   const [passportSavedNotice, setPassportSavedNotice] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
 
-  // AI State
+  // AI & Action State
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [actionNotice, setActionNotice] = useState('');
 
   const loadTickets = async () => {
     try {
@@ -108,6 +116,11 @@ export default function OperatorWorkspace({ user }) {
     }
   }, [selectedTicketId]);
 
+  const handleSelectTicket = (tId) => {
+    setSelectedTicketId(tId);
+    setMobileView('chat'); // On mobile switch to conversation canvas immediately
+  };
+
   const handleSendMessage = async (e) => {
     e?.preventDefault();
     if (!messageText.trim() || !selectedTicketId) return;
@@ -145,6 +158,51 @@ export default function OperatorWorkspace({ user }) {
     }
   };
 
+  // 1. Resolution Action: Проблема решена (Green Action Button)
+  const handleResolveTicket = async () => {
+    if (!selectedTicketId) return;
+    try {
+      setActionNotice('Проблема отмечена решенной!');
+      await api.tickets.resolve(selectedTicketId);
+      await loadTicketDetails(selectedTicketId);
+      await loadTickets();
+      setTimeout(() => setActionNotice(''), 3000);
+    } catch (err) {
+      alert(`Ошибка: ${err.message}`);
+    }
+  };
+
+  // 2. Resolution Action: Не решено (Нужен инженер) (Red Action Button)
+  const handleEscalateTicket = async () => {
+    if (!selectedTicketId) return;
+    try {
+      setActionNotice('Передано инженеру L2!');
+      await api.tickets.escalate(selectedTicketId);
+      await loadTicketDetails(selectedTicketId);
+      await loadTickets();
+      setTimeout(() => setActionNotice(''), 3000);
+    } catch (err) {
+      alert(`Ошибка: ${err.message}`);
+    }
+  };
+
+  // 3. AI Setup Assistant: Автоматическая помощь в настройке клиенту
+  const handleSendAiSetup = async () => {
+    if (!selectedTicketId) return;
+    setAiLoading(true);
+    try {
+      await api.tickets.sendAiSetup(selectedTicketId);
+      await loadTicketDetails(selectedTicketId);
+      await loadTickets();
+      setActionNotice('Пошаговая инструкция ИИ отправлена клиенту!');
+      setTimeout(() => setActionNotice(''), 3500);
+    } catch (err) {
+      console.error('AI setup assistant failed:', err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleAiSuggest = async () => {
     if (!selectedTicketId) return;
     setAiLoading(true);
@@ -165,6 +223,8 @@ export default function OperatorWorkspace({ user }) {
       await api.ai.triage(selectedTicketId);
       await loadTicketDetails(selectedTicketId);
       await loadTickets();
+      setActionNotice('AI триаж выполнен: параметры заполнены');
+      setTimeout(() => setActionNotice(''), 3000);
     } catch (err) {
       console.error('AI triage failed:', err);
     } finally {
@@ -199,567 +259,717 @@ export default function OperatorWorkspace({ user }) {
   };
 
   return (
-    <div className="h-[calc(100vh-56px)] flex flex-col md:flex-row overflow-hidden bg-zinc-50 dark:bg-zinc-950">
-      {/* ======================================================== */}
-      {/* PANE 1: MASTER LIST (QUEUE: Telegram + Instagram)       */}
-      {/* ======================================================== */}
-      <div className="w-full md:w-80 lg:w-88 border-r border-zinc-200 dark:border-zinc-800 flex flex-col bg-white dark:bg-zinc-950 shrink-0">
-        <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-200 tracking-tight font-mono uppercase">
-              Очередь тикетов
-            </span>
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
-              {tickets.length} диалогов
-            </span>
-          </div>
-
-          {/* Search Box */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Поиск по имени, номеру, ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 focus:outline-none focus:border-zinc-500 shadow-xs"
-            />
-          </div>
-
-          {/* Segmented Filter Controls */}
-          <div className="flex items-center space-x-1.5 text-xs">
-            <select
-              value={channelFilter}
-              onChange={(e) => setChannelFilter(e.target.value)}
-              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded px-2 py-1 text-zinc-800 dark:text-zinc-300 text-xs focus:outline-none focus:border-zinc-500 flex-1 font-mono shadow-xs"
-            >
-              <option value="">Все каналы</option>
-              <option value="telegram">Telegram</option>
-              <option value="instagram">Instagram</option>
-            </select>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded px-2 py-1 text-zinc-800 dark:text-zinc-300 text-xs focus:outline-none focus:border-zinc-500 flex-1 font-mono shadow-xs"
-            >
-              <option value="">Все статусы</option>
-              <option value="new">Новые</option>
-              <option value="in_progress">В работе</option>
-              <option value="escalated">Эскалированы</option>
-              <option value="resolved">Решенные</option>
-            </select>
-
-            <button
-              onClick={loadTickets}
-              className="p-1.5 rounded bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-zinc-250 dark:border-zinc-800 shadow-xs"
-              title="Обновить список"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Master List Items */}
-        <div className="flex-1 overflow-y-auto divide-y divide-zinc-150 dark:divide-zinc-900">
-          {tickets.length === 0 ? (
-            <div className="p-8 text-center text-xs text-zinc-400 font-mono">
-              Обращений не найдено
-            </div>
-          ) : (
-            tickets.map((t) => {
-              const isSelected = t.id === selectedTicketId;
-              return (
-                <div
-                  key={t.id}
-                  onClick={() => setSelectedTicketId(t.id)}
-                  className={`p-3.5 cursor-pointer transition-colors ${
-                    isSelected 
-                      ? 'bg-zinc-100 dark:bg-zinc-900 border-l-4 border-zinc-900 dark:border-zinc-200 shadow-xs' 
-                      : 'hover:bg-zinc-50 dark:hover:bg-zinc-900/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 rounded bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-750 flex items-center justify-center shrink-0">
-                        {t.channel === 'telegram' ? (
-                          <MessageCircle className="w-3 h-3 text-zinc-600 dark:text-zinc-300" />
-                        ) : (
-                          <InstagramIcon className="w-3 h-3 text-zinc-600 dark:text-zinc-300" />
-                        )}
-                      </div>
-                      <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate max-w-[130px]">
-                        {t.channel_user_name || t.channel_user_id}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center space-x-1.5 font-mono text-[10px]">
-                      {/* Informative Severity Pill (RED for P0/P1, YELLOW for P2) */}
-                      <span className={`px-1.5 py-0.2 rounded font-bold border ${
-                        t.severity === 'P0' ? 'bg-rose-600 text-white border-rose-700 font-bold' :
-                        t.severity === 'P1' ? 'bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900' :
-                        t.severity === 'P2' ? 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900' :
-                        'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
-                      }`}>
-                        {t.severity}
-                      </span>
-
-                      {/* Informative Status Pill (GREEN for new/resolved, YELLOW for in_progress, RED for escalated) */}
-                      <span className={`px-1.5 py-0.2 rounded border font-semibold ${
-                        t.status === 'new' ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900' :
-                        t.status === 'in_progress' ? 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900' :
-                        t.status === 'escalated' ? 'bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900' :
-                        'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
-                      }`}>
-                        {t.status === 'new' ? 'Новый' : t.status === 'in_progress' ? 'В работе' : t.status === 'escalated' ? 'Эскалация' : 'Решен'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-zinc-700 dark:text-zinc-300 line-clamp-1 mb-1 leading-snug">
-                    {t.category && <strong className="text-zinc-900 dark:text-zinc-100">{t.category}: </strong>}
-                    {t.problem || t.last_message || 'Без описания'}
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
-                    <span>{t.ticket_number}</span>
-                    <span>{t.device || 'Не указано'} • {t.operator || 'Сеть?'}</span>
-                  </div>
-                </div>
-              );
-            })
-          )}
+    <div className="h-[calc(100vh-56px)] flex flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+      {/* Mobile Top Navigation Tabs (VISIBLE ONLY ON MOBILE < MD) */}
+      <div className="md:hidden border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 flex items-center justify-between shrink-0 shadow-xs">
+        <div className="grid grid-cols-3 gap-1.5 w-full">
+          <button
+            onClick={() => setMobileView('queue')}
+            className={`py-1.5 rounded-lg text-xs font-semibold text-center transition-colors ${
+              mobileView === 'queue'
+                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
+            }`}
+          >
+            📋 Очередь ({tickets.length})
+          </button>
+          <button
+            onClick={() => setMobileView('chat')}
+            className={`py-1.5 rounded-lg text-xs font-semibold text-center transition-colors ${
+              mobileView === 'chat'
+                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
+            }`}
+          >
+            💬 Диалог
+          </button>
+          <button
+            onClick={() => setMobileView('passport')}
+            className={`py-1.5 rounded-lg text-xs font-semibold text-center transition-colors ${
+              mobileView === 'passport'
+                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
+            }`}
+          >
+            📑 Паспорт
+          </button>
         </div>
       </div>
 
-      {/* ======================================================== */}
-      {/* PANE 2: DETAIL CANVAS (CONVERSATION & ACTIONS)           */}
-      {/* ======================================================== */}
-      <div className="flex-1 flex flex-col border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950 min-w-0">
-        {selectedTicket ? (
-          <>
-            {/* Conversation Header */}
-            <div className="h-14 px-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-950 shrink-0 shadow-xs">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-750 flex items-center justify-center font-bold text-xs text-zinc-800 dark:text-zinc-200 font-mono">
-                  {selectedTicket.channel_user_name?.charAt(0) || 'U'}
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">{selectedTicket.channel_user_name}</span>
-                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">{selectedTicket.channel_user_handle}</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 font-mono">
-                      ID: {selectedTicket.channel_user_id}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-zinc-500 dark:text-zinc-400 flex items-center space-x-2 font-mono">
-                    <span>Канал: <strong className="text-zinc-700 dark:text-zinc-300 capitalize">{selectedTicket.channel}</strong></span>
-                    <span>•</span>
-                    <span>Тикет: <strong className="text-zinc-700 dark:text-zinc-300">{selectedTicket.ticket_number}</strong></span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Fast Action Buttons */}
-              <div className="flex items-center space-x-1.5">
-                <button
-                  onClick={handleSendKey}
-                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs"
-                  title="Отправить действующий ключ абоненту в чат"
-                >
-                  <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                  <span>Отправить ключ</span>
-                </button>
-
-                <button
-                  onClick={handleRecreateKey}
-                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs"
-                  title="Сбросить и выпустить ключ на новом сервере"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                  <span>Пересоздать ключ</span>
-                </button>
-              </div>
+      {/* Main 3-Pane Body with Mobile Responsive Switching */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        {/* ======================================================== */}
+        {/* PANE 1: MASTER LIST (QUEUE: Telegram + Instagram)       */}
+        {/* ======================================================== */}
+        <div className={`w-full md:w-80 lg:w-88 border-r border-zinc-200 dark:border-zinc-800 flex-col bg-white dark:bg-zinc-950 shrink-0 ${
+          mobileView === 'queue' ? 'flex flex-1' : 'hidden md:flex'
+        }`}>
+          <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-900 dark:text-zinc-200 tracking-tight font-mono uppercase">
+                Очередь тикетов
+              </span>
+              <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+                {tickets.length} диалогов
+              </span>
             </div>
 
-            {/* Conversation Stream */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-3.5 bg-zinc-50/40 dark:bg-zinc-950">
-              {messages.map((m) => {
-                const isClient = m.sender_type === 'client';
-                const isAI = m.sender_type === 'ai';
+            {/* Search Box */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="Поиск по имени, номеру, ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 focus:outline-none focus:border-zinc-500 shadow-xs"
+              />
+            </div>
+
+            {/* Segmented Filter Controls */}
+            <div className="flex items-center space-x-1.5 text-xs">
+              <select
+                value={channelFilter}
+                onChange={(e) => setChannelFilter(e.target.value)}
+                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded px-2 py-1 text-zinc-800 dark:text-zinc-300 text-xs focus:outline-none focus:border-zinc-500 flex-1 font-mono shadow-xs"
+              >
+                <option value="">Все каналы</option>
+                <option value="telegram">Telegram</option>
+                <option value="instagram">Instagram</option>
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded px-2 py-1 text-zinc-800 dark:text-zinc-300 text-xs focus:outline-none focus:border-zinc-500 flex-1 font-mono shadow-xs"
+              >
+                <option value="">Все статусы</option>
+                <option value="new">Новые</option>
+                <option value="in_progress">В работе</option>
+                <option value="escalated">Эскалированы</option>
+                <option value="resolved">Решенные</option>
+              </select>
+
+              <button
+                onClick={loadTickets}
+                className="p-1.5 rounded bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-zinc-250 dark:border-zinc-800 shadow-xs"
+                title="Обновить список"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Master List Items */}
+          <div className="flex-1 overflow-y-auto divide-y divide-zinc-150 dark:divide-zinc-900">
+            {tickets.length === 0 ? (
+              <div className="p-8 text-center text-xs text-zinc-400 font-mono">
+                Обращений не найдено
+              </div>
+            ) : (
+              tickets.map((t) => {
+                const isSelected = t.id === selectedTicketId;
                 return (
                   <div
-                    key={m.id}
-                    className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
+                    key={t.id}
+                    onClick={() => handleSelectTicket(t.id)}
+                    className={`p-3.5 cursor-pointer transition-colors ${
+                      isSelected 
+                        ? 'bg-zinc-100 dark:bg-zinc-900 border-l-4 border-zinc-900 dark:border-zinc-200 shadow-xs' 
+                        : 'hover:bg-zinc-50 dark:hover:bg-zinc-900/50'
+                    }`}
                   >
-                    <div className="flex items-center space-x-1.5 text-[10px] text-zinc-500 dark:text-zinc-400 mb-1 px-1 font-mono">
-                      {isAI && <Bot className="w-3 h-3 text-zinc-500 dark:text-zinc-400" />}
-                      <span>{m.sender_name || m.sender_type}</span>
-                      <span>•</span>
-                      <span>{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-5 h-5 rounded bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-750 flex items-center justify-center shrink-0">
+                          {t.channel === 'telegram' ? (
+                            <MessageCircle className="w-3 h-3 text-zinc-600 dark:text-zinc-300" />
+                          ) : (
+                            <InstagramIcon className="w-3 h-3 text-zinc-600 dark:text-zinc-300" />
+                          )}
+                        </div>
+                        <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate max-w-[130px]">
+                          {t.channel_user_name || t.channel_user_id}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center space-x-1.5 font-mono text-[10px]">
+                        <span className={`px-1.5 py-0.2 rounded font-bold border ${
+                          t.severity === 'P0' ? 'bg-rose-600 text-white border-rose-700 font-bold' :
+                          t.severity === 'P1' ? 'bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900' :
+                          t.severity === 'P2' ? 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900' :
+                          'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
+                        }`}>
+                          {t.severity}
+                        </span>
+
+                        <span className={`px-1.5 py-0.2 rounded border font-semibold ${
+                          t.status === 'new' ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900' :
+                          t.status === 'in_progress' ? 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900' :
+                          t.status === 'escalated' ? 'bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900' :
+                          'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
+                        }`}>
+                          {t.status === 'new' ? 'Новый' : t.status === 'in_progress' ? 'В работе' : t.status === 'escalated' ? 'Эскалация' : 'Решен'}
+                        </span>
+                      </div>
                     </div>
 
-                    <div
-                      className={`max-w-[80%] rounded-xl px-4 py-2.5 text-xs leading-relaxed whitespace-pre-wrap shadow-xs ${
-                        isClient
-                          ? 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100'
-                          : isAI
-                          ? 'bg-amber-50/50 dark:bg-zinc-900 border border-amber-200/60 dark:border-zinc-750 text-zinc-900 dark:text-zinc-100'
-                          : 'bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 text-white font-medium'
-                      }`}
-                    >
-                      {m.message_text}
+                    <div className="text-xs text-zinc-700 dark:text-zinc-300 line-clamp-1 mb-1 leading-snug">
+                      {t.category && <strong className="text-zinc-900 dark:text-zinc-100">{t.category}: </strong>}
+                      {t.problem || t.last_message || 'Без описания'}
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
+                      <span>{t.ticket_number}</span>
+                      <span>{t.device || 'Не указано'} • {t.operator || 'Сеть?'}</span>
                     </div>
                   </div>
                 );
-              })}
-            </div>
+              })
+            )}
+          </div>
+        </div>
 
-            {/* AI Suggestion Banner Pattern */}
-            {aiSuggestion && (
-              <div className="mx-4 mb-2 p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-750 text-xs space-y-2 shadow-lg">
-                <div className="flex items-center justify-between pb-2 border-b border-zinc-150 dark:border-zinc-800">
-                  <div className="flex items-center space-x-1.5 text-zinc-900 dark:text-zinc-200 font-semibold">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Подсказка от ИИ ({aiSuggestion.model_used})</span>
-                  </div>
+        {/* ======================================================== */}
+        {/* PANE 2: DETAIL CANVAS (CONVERSATION & RESOLUTION BAR)    */}
+        {/* ======================================================== */}
+        <div className={`flex-1 flex flex-col border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950 min-w-0 ${
+          mobileView === 'chat' ? 'flex' : 'hidden md:flex'
+        }`}>
+          {selectedTicket ? (
+            <>
+              {/* Conversation Header with Customer Info & Mobile Back button */}
+              <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-950 shrink-0 shadow-xs">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  {/* Mobile Back to Queue button */}
                   <button
-                    onClick={() => setMessageText(aiSuggestion.suggested_reply)}
-                    className="px-2.5 py-1 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-950 text-xs font-semibold transition-colors shadow-xs"
+                    onClick={() => setMobileView('queue')}
+                    className="md:hidden p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300"
+                    title="Назад к очереди"
                   >
-                    Вставить в чат
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+
+                  <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-750 flex items-center justify-center font-bold text-xs text-zinc-800 dark:text-zinc-200 font-mono shrink-0">
+                    {selectedTicket.channel_user_name?.charAt(0) || 'U'}
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate max-w-[140px] sm:max-w-none">
+                        {selectedTicket.channel_user_name}
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 font-mono hidden sm:inline-block">
+                        ID: {selectedTicket.channel_user_id}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-zinc-500 dark:text-zinc-400 flex items-center space-x-1.5 font-mono">
+                      <span>{selectedTicket.channel}</span>
+                      <span>•</span>
+                      <span>{selectedTicket.ticket_number}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Primary Resolution Action Buttons Pattern (РЕШИЛ / НЕ РЕШИЛ) */}
+                <div className="flex items-center space-x-1.5">
+                  {/* Button 1: Проблема решена (GREEN) */}
+                  <button
+                    onClick={handleResolveTicket}
+                    className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-xs"
+                    title="Отметить тикет как решенный и отправить подтверждение абоненту"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Решено</span>
+                  </button>
+
+                  {/* Button 2: Не решено / Нужен инженер (RED) */}
+                  <button
+                    onClick={handleEscalateTicket}
+                    className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors shadow-xs"
+                    title="Эскалировать тикет инженеру L2 при нерешенной проблеме"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Не решено</span>
+                  </button>
+
+                  {/* Mobile Jump to Passport button */}
+                  <button
+                    onClick={() => setMobileView('passport')}
+                    className="md:hidden p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300"
+                    title="Открыть паспорт тикета"
+                  >
+                    <FileText className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="text-zinc-700 dark:text-zinc-300 font-mono text-[11px] leading-relaxed line-clamp-3">
-                  {aiSuggestion.suggested_reply}
+              </div>
+
+              {/* Action Banner Feedback if any */}
+              {actionNotice && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/70 border-b border-emerald-200 dark:border-emerald-900 px-4 py-2 text-xs text-emerald-800 dark:text-emerald-200 font-medium flex items-center space-x-2 animate-fadeIn">
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>{actionNotice}</span>
                 </div>
+              )}
+
+              {/* Conversation Stream */}
+              <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-3.5 bg-zinc-50/40 dark:bg-zinc-950">
+                {messages.map((m) => {
+                  const isClient = m.sender_type === 'client';
+                  const isAI = m.sender_type === 'ai';
+                  return (
+                    <div
+                      key={m.id}
+                      className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
+                    >
+                      <div className="flex items-center space-x-1.5 text-[10px] text-zinc-500 dark:text-zinc-400 mb-1 px-1 font-mono">
+                        {isAI && <Bot className="w-3 h-3 text-zinc-500 dark:text-zinc-400" />}
+                        <span>{m.sender_name || m.sender_type}</span>
+                        <span>•</span>
+                        <span>{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+
+                      <div
+                        className={`max-w-[85%] sm:max-w-[80%] rounded-xl px-4 py-2.5 text-xs leading-relaxed whitespace-pre-wrap shadow-xs ${
+                          isClient
+                            ? 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100'
+                            : isAI
+                            ? 'bg-amber-50/60 dark:bg-zinc-900 border border-amber-200/80 dark:border-zinc-750 text-zinc-900 dark:text-zinc-100'
+                            : 'bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 text-white font-medium'
+                        }`}
+                      >
+                        {m.message_text}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
 
-            {/* Action Chips Toolbar Pattern */}
-            <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-850 bg-white/70 dark:bg-zinc-900/30 flex items-center space-x-1.5 overflow-x-auto text-xs">
-              <span className="text-[11px] text-zinc-500 dark:text-zinc-400 shrink-0 font-medium font-mono">Шаблоны:</span>
-              <button
-                type="button"
-                onClick={() => handleSendGuide('iPhone')}
-                className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors font-mono shadow-xs"
-              >
-                iOS Гайд
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendGuide('Android')}
-                className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors font-mono shadow-xs"
-              >
-                Android Гайд
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendGuide('Windows')}
-                className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors font-mono shadow-xs"
-              >
-                Windows Гайд
-              </button>
-              <button
-                type="button"
-                onClick={handleAiSuggest}
-                disabled={aiLoading}
-                className="px-2.5 py-1 rounded-md bg-zinc-900 dark:bg-zinc-800 hover:bg-zinc-800 dark:hover:bg-zinc-750 text-white border border-zinc-800 dark:border-zinc-700 font-medium shrink-0 flex items-center space-x-1 transition-colors shadow-xs"
-              >
-                <Sparkles className="w-3 h-3 text-amber-400" />
-                <span>Сгенерировать ответ ИИ</span>
-              </button>
-            </div>
+              {/* AI Suggestion Banner Pattern */}
+              {aiSuggestion && (
+                <div className="mx-3 sm:mx-4 mb-2 p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-750 text-xs space-y-2 shadow-lg">
+                  <div className="flex items-center justify-between pb-2 border-b border-zinc-150 dark:border-zinc-800">
+                    <div className="flex items-center space-x-1.5 text-zinc-900 dark:text-zinc-200 font-semibold">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Подсказка от ИИ ({aiSuggestion.model_used})</span>
+                    </div>
+                    <button
+                      onClick={() => setMessageText(aiSuggestion.suggested_reply)}
+                      className="px-2.5 py-1 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-950 text-xs font-semibold transition-colors shadow-xs"
+                    >
+                      Вставить в чат
+                    </button>
+                  </div>
+                  <div className="text-zinc-700 dark:text-zinc-300 font-mono text-[11px] leading-relaxed line-clamp-3">
+                    {aiSuggestion.suggested_reply}
+                  </div>
+                </div>
+              )}
 
-            {/* Bottom Composer Pattern */}
-            <form onSubmit={handleSendMessage} className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center space-x-2">
-              <input
-                type="text"
-                placeholder="Напишите ответ клиенту (отправится в Telegram или Instagram)..."
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                className="flex-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-3.5 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-500 shadow-xs"
-              />
-              <button
-                type="submit"
-                disabled={sendingMsg || !messageText.trim()}
-                className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white disabled:opacity-50 text-white dark:text-zinc-950 font-semibold text-xs flex items-center space-x-1.5 transition-colors shadow-xs"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Отправить</span>
-              </button>
-            </form>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-zinc-400 text-xs font-mono">
-            Выберите диалог из очереди слева
-          </div>
-        )}
-      </div>
-
-      {/* ======================================================== */}
-      {/* PANE 3: INSPECTOR (PASSPORT 7 FIELDS & CRM DATA)         */}
-      {/* ======================================================== */}
-      <div className="w-full md:w-80 lg:w-88 border-l border-zinc-200 dark:border-zinc-800 overflow-y-auto bg-white dark:bg-zinc-950 p-4 space-y-4 shrink-0 shadow-xs">
-        {selectedTicket ? (
-          <>
-            {/* Inspector Header with Save Button */}
-            <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
-              <div className="flex flex-col">
-                <span className="font-bold text-xs uppercase tracking-wide text-zinc-900 dark:text-zinc-100 font-mono">
-                  Паспорт обращения
-                </span>
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-400">7 обязательных полей аналитики</span>
-              </div>
-              <button
-                onClick={handleSavePassport}
-                disabled={savingPassport}
-                className="px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-950 text-xs font-bold flex items-center space-x-1.5 transition-colors shadow-xs"
-              >
-                {passportSavedNotice ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : null}
-                <span>{passportSavedNotice ? 'Сохранено' : 'Сохранить'}</span>
-              </button>
-            </div>
-
-            {/* AI Triage Card */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
-              <div className="flex items-center justify-between text-xs font-semibold text-zinc-900 dark:text-zinc-200">
-                <span className="flex items-center space-x-1.5">
-                  <Bot className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-                  <span>AI Триаж тикета</span>
-                </span>
+              {/* Action Chips Toolbar (with AI Setup Assistant button) */}
+              <div className="px-3 sm:px-4 py-2 border-t border-zinc-200 dark:border-zinc-850 bg-white/70 dark:bg-zinc-900/30 flex items-center space-x-1.5 overflow-x-auto text-xs shrink-0">
+                {/* 1. Помощь в настройке от ИИ (Action Chip) */}
                 <button
                   type="button"
-                  onClick={handleAiTriage}
+                  onClick={handleSendAiSetup}
                   disabled={aiLoading}
-                  className="px-2.5 py-1 rounded-md bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-750 text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-700 transition-colors shadow-xs"
+                  className="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold shrink-0 flex items-center space-x-1.5 transition-colors shadow-xs"
+                  title="ИИ определяет проблему и отправляет готовую пошаговую настройку клиенту"
                 >
-                  Заполнить по тексту
+                  <Wrench className="w-3 h-3 text-zinc-950" />
+                  <span>🛠 Помощь в настройке (ИИ)</span>
+                </button>
+
+                {/* 2. Отправить действующий ключ */}
+                <button
+                  type="button"
+                  onClick={handleSendKey}
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors shadow-xs font-medium"
+                >
+                  🔑 Выдать ключ
+                </button>
+
+                {/* 3. Сбросить ключ */}
+                <button
+                  type="button"
+                  onClick={handleRecreateKey}
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors shadow-xs font-medium"
+                >
+                  ⚡ Сбросить ключ
+                </button>
+
+                {/* 4. Быстрые гайды */}
+                <button
+                  type="button"
+                  onClick={() => handleSendGuide('iPhone')}
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors font-mono shadow-xs"
+                >
+                  iOS Гайд
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSendGuide('Android')}
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 transition-colors font-mono shadow-xs"
+                >
+                  Android Гайд
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleAiSuggest}
+                  disabled={aiLoading}
+                  className="px-2.5 py-1 rounded-md bg-zinc-900 dark:bg-zinc-800 hover:bg-zinc-800 dark:hover:bg-zinc-750 text-white border border-zinc-800 dark:border-zinc-700 font-medium shrink-0 flex items-center space-x-1 transition-colors shadow-xs"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span>Ответ ИИ</span>
                 </button>
               </div>
 
-              {selectedTicket.ai_diagnostic_summary && (
-                <div className="text-[11px] text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 leading-relaxed font-mono">
-                  <span className="font-bold text-zinc-900 dark:text-zinc-100">Диагноз ИИ: </span>
-                  {selectedTicket.ai_diagnostic_summary}
-                </div>
-              )}
-            </div>
-
-            {/* Grouped Form Fields */}
-            <div className="space-y-3.5 text-xs">
-              {/* Classification */}
-              <div className="space-y-1">
-                <label className="text-zinc-700 dark:text-zinc-300 font-semibold">1. Категория проблемы</label>
-                <select
-                  value={passport.category || ''}
-                  onChange={(e) => setPassport({ ...passport, category: e.target.value, subcategory: '' })}
-                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
+              {/* Bottom Composer */}
+              <form onSubmit={handleSendMessage} className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center space-x-2 shrink-0">
+                <input
+                  type="text"
+                  placeholder="Ответ клиенту (отправится в Telegram или Instagram)..."
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  className="flex-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-3.5 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-500 shadow-xs"
+                />
+                <button
+                  type="submit"
+                  disabled={sendingMsg || !messageText.trim()}
+                  className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white disabled:opacity-50 text-white dark:text-zinc-950 font-semibold text-xs flex items-center space-x-1.5 transition-colors shadow-xs shrink-0"
                 >
-                  <option value="">-- Выберите категорию --</option>
-                  {taxonomy && Object.keys(taxonomy.categories).map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Отправить</span>
+                </button>
+              </form>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-zinc-400 text-xs font-mono">
+              Выберите диалог из очереди слева
+            </div>
+          )}
+        </div>
+
+        {/* ======================================================== */}
+        {/* PANE 3: INSPECTOR (PASSPORT 7 FIELDS & CRM DATA)         */}
+        {/* ======================================================== */}
+        <div className={`w-full md:w-80 lg:w-88 border-l border-zinc-200 dark:border-zinc-800 overflow-y-auto bg-white dark:bg-zinc-950 p-4 space-y-4 shrink-0 shadow-xs ${
+          mobileView === 'passport' ? 'flex flex-col flex-1' : 'hidden md:flex flex-col'
+        }`}>
+          {selectedTicket ? (
+            <>
+              {/* Inspector Header with Save Button and Mobile back to Chat */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setMobileView('chat')}
+                    className="md:hidden p-1 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300"
+                    title="Назад в чат"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs uppercase tracking-wide text-zinc-900 dark:text-zinc-100 font-mono">
+                      Паспорт обращения
+                    </span>
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400">7 обязательных полей аналитики</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleSavePassport}
+                  disabled={savingPassport}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-950 text-xs font-bold flex items-center space-x-1.5 transition-colors shadow-xs"
+                >
+                  {passportSavedNotice ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : null}
+                  <span>{passportSavedNotice ? 'Сохранено' : 'Сохранить'}</span>
+                </button>
               </div>
 
-              {passport.category && taxonomy?.categories[passport.category] && (
+              {/* Status & Resolution Block (РЕШИЛ / НЕ РЕШИЛ TOGGLE IN PASSPORT) */}
+              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
+                <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center justify-between">
+                  <span>Результат обработки:</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                    passport.status === 'resolved' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' :
+                    passport.status === 'escalated' ? 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800' :
+                    'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                  }`}>
+                    {passport.status === 'resolved' ? 'РЕШЕНО' : passport.status === 'escalated' ? 'ЭСКАЛИРОВАНО L2' : 'В РАБОТЕ'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleResolveTicket}
+                    className="py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center space-x-1 shadow-xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Проблема решена</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleEscalateTicket}
+                    className="py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center justify-center space-x-1 shadow-xs"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Не решено (L2)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* AI Triage & Personalized Setup Card */}
+              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2.5 shadow-xs">
+                <div className="flex items-center justify-between text-xs font-semibold text-zinc-900 dark:text-zinc-200">
+                  <span className="flex items-center space-x-1.5">
+                    <Bot className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+                    <span>AI Триаж и Настройка</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleAiTriage}
+                    disabled={aiLoading}
+                    className="px-2.5 py-1 rounded-md bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-750 text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 border border-zinc-250 dark:border-zinc-700 transition-colors shadow-xs"
+                  >
+                    Заполнить по тексту
+                  </button>
+                </div>
+
+                {selectedTicket.ai_diagnostic_summary && (
+                  <div className="text-[11px] text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 leading-relaxed font-mono">
+                    <span className="font-bold text-zinc-900 dark:text-zinc-100">Диагноз ИИ: </span>
+                    {selectedTicket.ai_diagnostic_summary}
+                  </div>
+                )}
+
+                {/* Direct 1-click button to send personalized AI setup guide to customer */}
+                <button
+                  type="button"
+                  onClick={handleSendAiSetup}
+                  disabled={aiLoading}
+                  className="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
+                >
+                  <Wrench className="w-3.5 h-3.5" />
+                  <span>Отправить настройку клиенту в чат</span>
+                </button>
+              </div>
+
+              {/* Grouped Form Fields */}
+              <div className="space-y-3.5 text-xs">
+                {/* Classification */}
                 <div className="space-y-1">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold">Подкатегория</label>
+                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold">1. Категория проблемы</label>
                   <select
-                    value={passport.subcategory || ''}
-                    onChange={(e) => setPassport({ ...passport, subcategory: e.target.value })}
+                    value={passport.category || ''}
+                    onChange={(e) => setPassport({ ...passport, category: e.target.value, subcategory: '' })}
                     className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
                   >
-                    <option value="">-- Подкатегория --</option>
-                    {taxonomy.categories[passport.category].map((sub) => (
-                      <option key={sub} value={sub}>{sub}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Environment */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold font-mono">2. Устройство</label>
-                  <select
-                    value={passport.device || ''}
-                    onChange={(e) => setPassport({ ...passport, device: e.target.value })}
-                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 font-mono shadow-xs"
-                  >
-                    <option value="">-- Платформа --</option>
-                    {taxonomy?.devices.map((d) => (
-                      <option key={d} value={d}>{d}</option>
+                    <option value="">-- Выберите категорию --</option>
+                    {taxonomy && Object.keys(taxonomy.categories).map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold font-mono">3. Оператор</label>
-                  <select
-                    value={passport.operator || ''}
-                    onChange={(e) => setPassport({ ...passport, operator: e.target.value })}
-                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 font-mono shadow-xs"
-                  >
-                    <option value="">-- Оператор --</option>
-                    {taxonomy?.operators.map((o) => (
-                      <option key={o} value={o}>{o}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold font-mono">4. Приложение</label>
-                  <select
-                    value={passport.app || ''}
-                    onChange={(e) => setPassport({ ...passport, app: e.target.value })}
-                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 font-mono shadow-xs"
-                  >
-                    <option value="">-- Приложение --</option>
-                    {taxonomy?.apps.map((a) => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold font-mono">Критичность</label>
-                  <select
-                    value={passport.severity || 'P2'}
-                    onChange={(e) => setPassport({ ...passport, severity: e.target.value })}
-                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 font-mono shadow-xs"
-                  >
-                    <option value="P0">P0 (Авария)</option>
-                    <option value="P1">P1 (Критичная)</option>
-                    <option value="P2">P2 (Стандартная)</option>
-                    <option value="P3">P3 (Инструкция / FAQ)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Symptom & Cause */}
-              <div className="space-y-1">
-                <label className="text-zinc-700 dark:text-zinc-300 font-semibold">5. Проблема (Симптом)</label>
-                <input
-                  type="text"
-                  value={passport.problem || ''}
-                  onChange={(e) => setPassport({ ...passport, problem: e.target.value })}
-                  placeholder="Суть жалобы абонента..."
-                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-zinc-700 dark:text-zinc-300 font-semibold">6. Причина (Root Cause)</label>
-                <input
-                  type="text"
-                  value={passport.cause || ''}
-                  onChange={(e) => setPassport({ ...passport, cause: e.target.value })}
-                  placeholder="Блокировка оператора, сбой сервера..."
-                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-zinc-700 dark:text-zinc-300 font-semibold">7. Результат решения</label>
-                <input
-                  type="text"
-                  value={passport.result || ''}
-                  onChange={(e) => setPassport({ ...passport, result: e.target.value })}
-                  placeholder="Решено сменой протокола / сервера..."
-                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
-                />
-              </div>
-
-              {/* Status & Verification */}
-              <div className="grid grid-cols-2 gap-2 font-mono">
-                <div className="space-y-1">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold">Статус тикета</label>
-                  <select
-                    value={passport.status || 'new'}
-                    onChange={(e) => setPassport({ ...passport, status: e.target.value })}
-                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 font-semibold shadow-xs"
-                  >
-                    <option value="new">Новый</option>
-                    <option value="in_progress">В работе</option>
-                    <option value="escalated">Эскалирован L2</option>
-                    <option value="resolved">Решен</option>
-                    <option value="closed">Закрыт</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold">Инструкция помогла</label>
-                  <select
-                    value={passport.instruction_helped === true ? '1' : passport.instruction_helped === false ? '0' : ''}
-                    onChange={(e) => setPassport({ 
-                      ...passport, 
-                      instruction_helped: e.target.value === '1' ? true : e.target.value === '0' ? false : null 
-                    })}
-                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
-                  >
-                    <option value="">Неизвестно</option>
-                    <option value="1">Да (Помогла)</option>
-                    <option value="0">Нет</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* VPN Key Inspector Card with Status Pill */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
-              <div className="flex items-center justify-between text-xs font-bold text-zinc-900 dark:text-zinc-200">
-                <span className="flex items-center space-x-1.5">
-                  <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                  <span>Активные ключи VPN</span>
-                </span>
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">databasetop</span>
-              </div>
-
-              {vpnKeys.length > 0 ? (
-                vpnKeys.map((k) => (
-                  <div key={k.id} className="bg-white dark:bg-zinc-950 p-3 rounded-lg border border-zinc-200 dark:border-zinc-850 space-y-1.5 text-xs shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-zinc-900 dark:text-white font-mono">{k.server} • {k.protocol}</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
-                        k.subscription_status === 'active' 
-                          ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900' 
-                          : 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900'
-                      }`}>
-                        {k.subscription_status}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-200 dark:border-zinc-800 font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
-                      <span className="truncate max-w-[190px]">{k.key_string}</span>
-                      <button
-                        onClick={() => handleCopyKeyString(k.key_string)}
-                        className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors ml-1"
-                        title="Скопировать ключ"
-                      >
-                        {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                    <div className="text-[10px] text-zinc-500 dark:text-zinc-400 flex justify-between font-mono pt-0.5">
-                      <span>Трафик: {k.traffic_used_gb} / {k.traffic_limit_gb} GB</span>
-                      <span>До: {k.expires_at || 'бессрочно'}</span>
-                    </div>
+                {passport.category && taxonomy?.categories[passport.category] && (
+                  <div className="space-y-1">
+                    <label className="text-zinc-700 dark:text-zinc-300 font-semibold">Подкатегория</label>
+                    <select
+                      value={passport.subcategory || ''}
+                      onChange={(e) => setPassport({ ...passport, subcategory: e.target.value })}
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
+                    >
+                      <option value="">-- Подкатегория --</option>
+                      {taxonomy.categories[passport.category].map((sub) => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
                   </div>
-                ))
-              ) : (
-                <div className="text-xs text-zinc-400 text-center py-2 font-mono">
-                  Для данного абонента нет ключей в базе
+                )}
+
+                {/* Environment */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-zinc-700 dark:text-zinc-300 font-semibold font-mono">2. Устройство</label>
+                    <select
+                      value={passport.device || ''}
+                      onChange={(e) => setPassport({ ...passport, device: e.target.value })}
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 font-mono shadow-xs"
+                    >
+                      <option value="">-- Платформа --</option>
+                      {taxonomy?.devices.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-zinc-700 dark:text-zinc-300 font-semibold font-mono">3. Оператор</label>
+                    <select
+                      value={passport.operator || ''}
+                      onChange={(e) => setPassport({ ...passport, operator: e.target.value })}
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 font-mono shadow-xs"
+                    >
+                      <option value="">-- Оператор --</option>
+                      {taxonomy?.operators.map((o) => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-zinc-700 dark:text-zinc-300 font-semibold font-mono">4. Приложение</label>
+                    <select
+                      value={passport.app || ''}
+                      onChange={(e) => setPassport({ ...passport, app: e.target.value })}
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 font-mono shadow-xs"
+                    >
+                      <option value="">-- Приложение --</option>
+                      {taxonomy?.apps.map((a) => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-zinc-700 dark:text-zinc-300 font-semibold font-mono">Критичность</label>
+                    <select
+                      value={passport.severity || 'P2'}
+                      onChange={(e) => setPassport({ ...passport, severity: e.target.value })}
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 font-mono shadow-xs"
+                    >
+                      <option value="P0">P0 (Авария)</option>
+                      <option value="P1">P1 (Критичная)</option>
+                      <option value="P2">P2 (Стандартная)</option>
+                      <option value="P3">P3 (Инструкция / FAQ)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Symptom & Cause */}
+                <div className="space-y-1">
+                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold">5. Проблема (Симптом)</label>
+                  <input
+                    type="text"
+                    value={passport.problem || ''}
+                    onChange={(e) => setPassport({ ...passport, problem: e.target.value })}
+                    placeholder="Суть жалобы абонента..."
+                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold">6. Причина (Root Cause)</label>
+                  <input
+                    type="text"
+                    value={passport.cause || ''}
+                    onChange={(e) => setPassport({ ...passport, cause: e.target.value })}
+                    placeholder="Блокировка оператора, сбой сервера..."
+                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold">7. Результат решения</label>
+                  <input
+                    type="text"
+                    value={passport.result || ''}
+                    onChange={(e) => setPassport({ ...passport, result: e.target.value })}
+                    placeholder="Решено сменой протокола / сервера..."
+                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
+                  />
+                </div>
+
+                {/* Status & Verification */}
+                <div className="grid grid-cols-2 gap-2 font-mono">
+                  <div className="space-y-1">
+                    <label className="text-zinc-700 dark:text-zinc-300 font-semibold">Статус тикета</label>
+                    <select
+                      value={passport.status || 'new'}
+                      onChange={(e) => setPassport({ ...passport, status: e.target.value })}
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 font-semibold shadow-xs"
+                    >
+                      <option value="new">Новый</option>
+                      <option value="in_progress">В работе</option>
+                      <option value="escalated">Эскалирован L2</option>
+                      <option value="resolved">Решен</option>
+                      <option value="closed">Закрыт</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-zinc-700 dark:text-zinc-300 font-semibold">Инструкция помогла</label>
+                    <select
+                      value={passport.instruction_helped === true ? '1' : passport.instruction_helped === false ? '0' : ''}
+                      onChange={(e) => setPassport({ 
+                        ...passport, 
+                        instruction_helped: e.target.value === '1' ? true : e.target.value === '0' ? false : null 
+                      })}
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-500 shadow-xs"
+                    >
+                      <option value="">Неизвестно</option>
+                      <option value="1">Да (Помогла)</option>
+                      <option value="0">Нет</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* VPN Key Inspector Card with Status Pill */}
+              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
+                <div className="flex items-center justify-between text-xs font-bold text-zinc-900 dark:text-zinc-200">
+                  <span className="flex items-center space-x-1.5">
+                    <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                    <span>Активные ключи VPN</span>
+                  </span>
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">databasetop</span>
+                </div>
+
+                {vpnKeys.length > 0 ? (
+                  vpnKeys.map((k) => (
+                    <div key={k.id} className="bg-white dark:bg-zinc-950 p-3 rounded-lg border border-zinc-200 dark:border-zinc-850 space-y-1.5 text-xs shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-zinc-900 dark:text-white font-mono">{k.server} • {k.protocol}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                          k.subscription_status === 'active' 
+                            ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900' 
+                            : 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900'
+                        }`}>
+                          {k.subscription_status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-200 dark:border-zinc-800 font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
+                        <span className="truncate max-w-[190px]">{k.key_string}</span>
+                        <button
+                          onClick={() => handleCopyKeyString(k.key_string)}
+                          className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-850 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors ml-1"
+                          title="Скопировать ключ"
+                        >
+                          {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 flex justify-between font-mono pt-0.5">
+                        <span>Трафик: {k.traffic_used_gb} / {k.traffic_limit_gb} GB</span>
+                        <span>До: {k.expires_at || 'бессрочно'}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-xs text-zinc-400 text-center py-2 font-mono">
+                    Для данного абонента нет ключей в базе
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="text-center text-zinc-400 text-xs py-8 font-mono">
+              Выберите тикет
             </div>
-          </>
-        ) : (
-          <div className="text-center text-zinc-400 text-xs py-8 font-mono">
-            Выберите тикет
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

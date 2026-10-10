@@ -84,6 +84,9 @@ export const api = {
     sendKey: (id) => request(`/tickets/${id}/send-key`, { method: 'POST' }),
     recreateKey: (id, data = {}) => request(`/tickets/${id}/recreate-key`, { method: 'POST', body: JSON.stringify(data) }),
     sendGuide: (id, platform) => request(`/tickets/${id}/send-guide?platform=${platform}`, { method: 'POST' }),
+    sendAiSetup: (id) => request(`/tickets/${id}/send-ai-setup`, { method: 'POST' }),
+    resolve: (id) => request(`/tickets/${id}/resolve`, { method: 'POST' }),
+    escalate: (id) => request(`/tickets/${id}/escalate`, { method: 'POST' }),
     getVpnKeys: (id) => request(`/tickets/${id}/vpn-keys`),
     getTaxonomy: () => request('/tickets/taxonomy')
   },
