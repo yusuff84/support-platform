@@ -19,7 +19,7 @@ const ROLES_TITLE = {
   superroot: 'Суперрут'
 };
 
-export default function Header({ user, currentTab, setTab, onQuickRoleSwitch, onLogout }) {
+export default function Header({ user, currentTab, setTab, onQuickRoleSwitch, onLogout, hideMobileBottomBar = false }) {
   const { theme, toggleTheme } = useTheme();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -40,7 +40,7 @@ export default function Header({ user, currentTab, setTab, onQuickRoleSwitch, on
   return (
     <>
       {/* 1. Top Bar Header */}
-      <header className="h-13 md:h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur sticky top-0 z-40 px-3 md:px-6 flex items-center justify-between select-none shadow-xs transition-colors duration-150">
+      <header className="h-13 md:h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur sticky top-0 z-40 px-3 md:px-6 flex items-center justify-between select-none shadow-xs transition-colors duration-150 shrink-0">
         {/* Brand & Desktop Title */}
         <div className="flex items-center space-x-3 md:space-x-6">
           <div className="flex items-center space-x-2.5">
@@ -58,7 +58,7 @@ export default function Header({ user, currentTab, setTab, onQuickRoleSwitch, on
             </div>
           </div>
 
-          {/* Desktop Navigation Tabs (Hidden on mobile, uses bottom nav on mobile) */}
+          {/* Desktop Navigation Tabs */}
           <nav className="hidden lg:flex items-center space-x-1 pl-4 border-l border-zinc-200 dark:border-zinc-800">
             <button
               onClick={() => setTab('dashboard')}
@@ -198,72 +198,74 @@ export default function Header({ user, currentTab, setTab, onQuickRoleSwitch, on
         </div>
       </header>
 
-      {/* 2. Mobile Bottom Navigation Bar Pattern (Fixed at bottom for thumb-friendly navigation on phones) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-14 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur z-50 flex items-center justify-around px-2 shadow-lg pb-[env(safe-area-inset-bottom,0px)]">
-        <button
-          onClick={() => setTab('dashboard')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            currentTab === 'dashboard'
-              ? 'text-zinc-950 dark:text-white font-bold'
-              : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4 mb-0.5" />
-          <span className="text-[10px] leading-tight">Health</span>
-        </button>
-
-        <button
-          onClick={() => setTab('workspace')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            currentTab === 'workspace'
-              ? 'text-zinc-950 dark:text-white font-bold'
-              : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4 mb-0.5" />
-          <span className="text-[10px] leading-tight">Чаты</span>
-        </button>
-
-        {showProblemsTab && (
+      {/* 2. Mobile Bottom Navigation Bar (Hidden when inside mobile chat to allow 100% space for composer) */}
+      {!hideMobileBottomBar && (
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-14 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur z-40 flex items-center justify-around px-2 shadow-lg pb-[env(safe-area-inset-bottom,0px)]">
           <button
-            onClick={() => setTab('problems')}
+            onClick={() => setTab('dashboard')}
             className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-              currentTab === 'problems'
+              currentTab === 'dashboard'
                 ? 'text-zinc-950 dark:text-white font-bold'
                 : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700'
             }`}
           >
-            <Sliders className="w-4 h-4 mb-0.5" />
-            <span className="text-[10px] leading-tight">Реестр</span>
+            <BarChart3 className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] leading-tight">Health</span>
           </button>
-        )}
 
-        <button
-          onClick={() => setTab('knowledge')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            currentTab === 'knowledge'
-              ? 'text-zinc-950 dark:text-white font-bold'
-              : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700'
-          }`}
-        >
-          <BookOpen className="w-4 h-4 mb-0.5" />
-          <span className="text-[10px] leading-tight">База</span>
-        </button>
-
-        {showSettingsTab && (
           <button
-            onClick={() => setTab('settings')}
+            onClick={() => setTab('workspace')}
             className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-              currentTab === 'settings'
+              currentTab === 'workspace'
                 ? 'text-zinc-950 dark:text-white font-bold'
                 : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700'
             }`}
           >
-            <Settings className="w-4 h-4 mb-0.5" />
-            <span className="text-[10px] leading-tight">Настройки</span>
+            <MessageSquare className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] leading-tight">Чаты</span>
           </button>
-        )}
-      </nav>
+
+          {showProblemsTab && (
+            <button
+              onClick={() => setTab('problems')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+                currentTab === 'problems'
+                  ? 'text-zinc-950 dark:text-white font-bold'
+                  : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700'
+              }`}
+            >
+              <Sliders className="w-4 h-4 mb-0.5" />
+              <span className="text-[10px] leading-tight">Реестр</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setTab('knowledge')}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+              currentTab === 'knowledge'
+                ? 'text-zinc-950 dark:text-white font-bold'
+                : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700'
+            }`}
+          >
+            <BookOpen className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] leading-tight">База</span>
+          </button>
+
+          {showSettingsTab && (
+            <button
+              onClick={() => setTab('settings')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+                currentTab === 'settings'
+                  ? 'text-zinc-950 dark:text-white font-bold'
+                  : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700'
+              }`}
+            >
+              <Settings className="w-4 h-4 mb-0.5" />
+              <span className="text-[10px] leading-tight">Настройки</span>
+            </button>
+          )}
+        </nav>
+      )}
     </>
   );
 }

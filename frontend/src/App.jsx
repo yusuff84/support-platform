@@ -19,6 +19,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState('dashboard');
+  const [mobileChatOpen, setMobileChatOpen] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -90,18 +91,22 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-150">
+    <div className="min-h-[100dvh] bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-150">
       <Header
         user={user}
         currentTab={currentTab}
-        setTab={setCurrentTab}
+        setTab={(tab) => {
+          setCurrentTab(tab);
+          setMobileChatOpen(false);
+        }}
         onQuickRoleSwitch={handleQuickRoleSwitch}
         onLogout={handleLogout}
+        hideMobileBottomBar={currentTab === 'workspace' && mobileChatOpen}
       />
 
-      <main className="flex-1 overflow-x-hidden">
+      <main className="flex-1 overflow-x-hidden min-h-0 flex flex-col">
         {currentTab === 'dashboard' && <DirectorDashboard />}
-        {currentTab === 'workspace' && <OperatorWorkspace user={user} />}
+        {currentTab === 'workspace' && <OperatorWorkspace user={user} onMobileChatChange={setMobileChatOpen} />}
         {currentTab === 'problems' && <ProblemRegisterView user={user} />}
         {currentTab === 'knowledge' && <KnowledgeBaseView user={user} />}
         {currentTab === 'settings' && <SystemSettingsView user={user} />}

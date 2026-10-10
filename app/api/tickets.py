@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
 import aiosqlite
+import os
+import uuid
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import random
@@ -572,5 +574,67 @@ async def send_ai_setup_guide(
 
     msg = MessageCreate(ticket_id=ticket_id, message_text=guide_text, sender_type="ai")
     return await send_ticket_message(ticket_id, msg, current_user, db)
+
+@router.post("/{ticket_id}/upload", response_model=MessageOut)
+async def upload_attachment(
+    ticket_id: int,
+    file: UploadFile = File(...),
+    media_type: str = Form("document"), # 'photo', 'video', 'voice', 'audio', 'document'
+    caption: Optional[str] = Form(None),
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    """Uploads photo, video, document or voice message and records message."""
+    async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
+        ticket = await cursor.fetchone()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+
+    ext = os.path.splitext(file.filename or "")[1] or ""
+    if not ext:
+        if media_type == "voice":
+            ext = ".webm"
+        elif media_type == "photo":
+            ext = ".jpg"
+        elif media_type == "video":
+            ext = ".mp4"
+
+    filename = f"{uuid.uuid4().hex}{ext}"
+    filepath = os.path.join(uploads_dir, filename)
+
+    content = await file.read()
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    media_url = f"/uploads/{filename}"
+    now_iso = datetime.now(timezone.utc).isoformat()
+    msg_text = caption or (f"🎤 Голосовое сообщение" if media_type == "voice" else f"📎 {file.filename or media_type.capitalize()}")
+
+    cursor = await db.execute(
+        """
+        INSERT INTO ticket_messages (ticket_id, sender_type, sender_name, sender_id, message_text, media_type, media_url, created_at)
+        VALUES (?, 'operator', ?, ?, ?, ?, ?, ?)
+        """,
+        (ticket_id, current_user["full_name"], str(current_user["id"]), msg_text, media_type, media_url, now_iso)
+    )
+    msg_id = cursor.lastrowid
+    await db.execute("UPDATE tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (ticket_id,))
+    await db.commit()
+
+    return MessageOut(
+        id=msg_id,
+        ticket_id=ticket_id,
+        sender_type="operator",
+        sender_name=current_user["full_name"],
+        sender_id=str(current_user["id"]),
+        message_text=msg_text,
+        media_type=media_type,
+        media_url=media_url,
+        created_at=now_iso
+    )
+
 
 

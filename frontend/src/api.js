@@ -14,8 +14,9 @@ export function setToken(token) {
 
 async function request(endpoint, options = {}) {
   const token = getToken();
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {})
   };
@@ -85,6 +86,7 @@ export const api = {
     recreateKey: (id, data = {}) => request(`/tickets/${id}/recreate-key`, { method: 'POST', body: JSON.stringify(data) }),
     sendGuide: (id, platform) => request(`/tickets/${id}/send-guide?platform=${platform}`, { method: 'POST' }),
     sendAiSetup: (id) => request(`/tickets/${id}/send-ai-setup`, { method: 'POST' }),
+    uploadAttachment: (id, formData) => request(`/tickets/${id}/upload`, { method: 'POST', body: formData }),
     resolve: (id) => request(`/tickets/${id}/resolve`, { method: 'POST' }),
     escalate: (id) => request(`/tickets/${id}/escalate`, { method: 'POST' }),
     getVpnKeys: (id) => request(`/tickets/${id}/vpn-keys`),

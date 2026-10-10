@@ -46,6 +46,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Uploads directory
+uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
 # Register API Routers
 app.include_router(auth_router)
 app.include_router(tickets_router)
