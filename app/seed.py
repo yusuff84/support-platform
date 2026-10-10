@@ -242,6 +242,10 @@ async def seed_data():
 
             now = datetime.now(timezone.utc)
             for idx, t in enumerate(sample_tickets_data):
+                async with db.execute("SELECT id FROM tickets WHERE ticket_number = ?", (t["num"],)) as check_cur:
+                    if await check_cur.fetchone():
+                        continue
+
                 created_dt = (now - timedelta(hours=random.randint(2, 48))).isoformat()
                 cursor = await db.execute(
                     """

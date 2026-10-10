@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Settings as SettingsIcon, 
   Key, 
   Send, 
   Database, 
@@ -95,7 +94,7 @@ export default function SystemSettingsView({ user }) {
 
   const handleSimulate = async (e) => {
     e.preventDefault();
-    setSimStatus('Отправка события в очередь...');
+    setSimStatus('Отправка запроса...');
     try {
       const res = await api.webhooks.simulate({
         channel: simChannel,
@@ -103,7 +102,7 @@ export default function SystemSettingsView({ user }) {
         user_name: simUserName,
         message_text: simText
       });
-      setSimStatus(`Успешно! Создан/обновлен тикет #${res.ticket_id || res.user_id}`);
+      setSimStatus(`Успешно! Тикет создан: #${res.ticket_id || res.user_id}`);
       setTimeout(() => setSimStatus(''), 4000);
     } catch (err) {
       setSimStatus(`Ошибка: ${err.message}`);
@@ -123,44 +122,44 @@ export default function SystemSettingsView({ user }) {
   };
 
   if (loading) {
-    return <div className="p-12 text-center text-slate-500 text-xs">Загрузка системных настроек...</div>;
+    return <div className="p-12 text-center text-slate-500 text-xs">Загрузка параметров системы...</div>;
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-8">
+    <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-7">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">СУПЕРРУТ НАСТРОЙКИ</h1>
-            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
-              Superroot Access Only
+          <div className="flex items-center space-x-2.5">
+            <h1 className="text-lg md:text-xl font-bold tracking-tight text-slate-100">СИСТЕМНЫЕ НАСТРОЙКИ И ИНТЕГРАЦИИ</h1>
+            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+              Доступ: Суперрут
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Управление интеграциями Telegram, Instagram, пулом бесплатных моделей OpenRouter, базой данных VPN и сотрудниками.
+            Конфигурация Telegram-бота, Instagram Webhooks, пула моделей OpenRouter, базы VPN и учетных записей.
           </p>
         </div>
 
         {savedNotice && (
-          <div className="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold animate-pulse">
-            <Check className="w-4 h-4" />
-            <span>Настройки успешно сохранены!</span>
+          <div className="flex items-center space-x-1.5 px-3 py-1 rounded bg-slate-800 border border-slate-700 text-slate-200 text-xs font-medium">
+            <Check className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Параметры успешно обновлены</span>
           </div>
         )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* SECTION 1: OpenRouter Free Model Pool */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/60">
             <div className="flex items-center space-x-2">
-              <Key className="w-4 h-4 text-indigo-400" />
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider">OpenRouter AI & Бесплатный пул</h2>
+              <Key className="w-4 h-4 text-slate-400" />
+              <h2 className="text-xs font-semibold text-slate-200 uppercase tracking-wide">OpenRouter AI & Пул моделей</h2>
             </div>
-            <span className="text-[11px] text-slate-400">
-              Статус ключа: <strong className={settings?.openrouter?.has_api_key ? 'text-emerald-400' : 'text-amber-400'}>
-                {settings?.openrouter?.has_api_key ? 'Активен' : 'Локальный режим (Heuristic)'}
+            <span className="text-[11px] text-slate-400 font-mono">
+              Статус: <strong className={settings?.openrouter?.has_api_key ? 'text-emerald-400' : 'text-slate-400'}>
+                {settings?.openrouter?.has_api_key ? 'Активен' : 'Локальный эвристический'}
               </strong>
             </span>
           </div>
@@ -173,29 +172,29 @@ export default function SystemSettingsView({ user }) {
                 placeholder={settings?.openrouter?.masked_key ? `Текущий: ${settings.openrouter.masked_key}` : 'sk-or-v1-...'}
                 value={openrouterKey}
                 onChange={(e) => setOpenrouterKey(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
               />
               <span className="text-[10px] text-slate-500 mt-0.5 block">
-                Ключ от openrouter.ai для доступа к пулу моделей.
+                Ключ от сервиса openrouter.ai для вызова LLM.
               </span>
             </div>
 
             <div>
-              <label className="text-slate-400 font-medium">Пул бесплатных моделей (последовательность failover)</label>
+              <label className="text-slate-400 font-medium">Пул бесплатных моделей (очередь авто-failover)</label>
               <textarea
                 rows="5"
                 value={modelPoolStr}
                 onChange={(e) => setModelPoolStr(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono text-[11px]"
+                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono text-[11px]"
               />
               <span className="text-[10px] text-slate-500 mt-0.5 block">
-                При ошибке 429 или таймауте система автоматически переключается на следующую модель по списку.
+                При 429 или таймауте система автоматически переключается на следующую модель по списку.
               </span>
             </div>
 
             <button
               type="submit"
-              className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-md shadow-indigo-600/30 transition-colors"
+              className="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium transition-colors"
             >
               Сохранить параметры ИИ
             </button>
@@ -203,11 +202,11 @@ export default function SystemSettingsView({ user }) {
         </div>
 
         {/* SECTION 2: Channels (Telegram & Instagram) & VPN DB */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/60">
             <div className="flex items-center space-x-2">
-              <Send className="w-4 h-4 text-cyan-400" />
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Каналы связи и База VPN</h2>
+              <Send className="w-4 h-4 text-slate-400" />
+              <h2 className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Каналы связи и База VPN</h2>
             </div>
           </div>
 
@@ -215,8 +214,8 @@ export default function SystemSettingsView({ user }) {
             <div>
               <label className="text-slate-400 font-medium flex items-center justify-between">
                 <span>Telegram Bot Token (@topvpnhelp_bot)</span>
-                <span className={settings?.telegram?.is_configured ? 'text-emerald-400 text-[10px]' : 'text-slate-500 text-[10px]'}>
-                  {settings?.telegram?.is_configured ? 'Подключен' : 'Не задан (симуляция)'}
+                <span className="text-slate-400 text-[10px] font-mono">
+                  {settings?.telegram?.is_configured ? 'Подключен' : 'Режим симуляции'}
                 </span>
               </label>
               <input
@@ -224,7 +223,7 @@ export default function SystemSettingsView({ user }) {
                 placeholder={settings?.telegram?.masked_token ? `Текущий: ${settings.telegram.masked_token}` : '123456789:ABCDefgh...'}
                 value={tgToken}
                 onChange={(e) => setTgToken(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
               />
             </div>
 
@@ -235,15 +234,15 @@ export default function SystemSettingsView({ user }) {
                 placeholder="-100123456789"
                 value={tgGroupId}
                 onChange={(e) => setTgGroupId(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
               />
             </div>
 
             <div>
               <label className="text-slate-400 font-medium flex items-center justify-between">
                 <span>Instagram Graph API Access Token</span>
-                <span className={settings?.instagram?.is_configured ? 'text-emerald-400 text-[10px]' : 'text-slate-500 text-[10px]'}>
-                  {settings?.instagram?.is_configured ? 'Подключен' : 'Симуляция / Mock'}
+                <span className="text-slate-400 text-[10px] font-mono">
+                  {settings?.instagram?.is_configured ? 'Подключен' : 'Режим симуляции'}
                 </span>
               </label>
               <input
@@ -251,21 +250,21 @@ export default function SystemSettingsView({ user }) {
                 placeholder="EAAG..."
                 value={igToken}
                 onChange={(e) => setIgToken(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
               />
             </div>
 
             <div>
               <label className="text-slate-400 font-medium flex items-center justify-between">
                 <span>Строка подключения к базе VPN (databasetop)</span>
-                <span className="text-cyan-400 text-[10px]">{settings?.vpn_database?.status}</span>
+                <span className="text-slate-400 text-[10px] font-mono">{settings?.vpn_database?.status}</span>
               </label>
               <input
                 type="text"
                 placeholder="postgresql://user:pass@host:5432/databasetop"
                 value={vpnDbUrl}
                 onChange={(e) => setVpnDbUrl(e.target.value)}
-                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
               />
               <span className="text-[10px] text-slate-500 mt-0.5 block">
                 {settings?.vpn_database?.message}
@@ -274,7 +273,7 @@ export default function SystemSettingsView({ user }) {
 
             <button
               type="submit"
-              className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-md shadow-indigo-600/30 transition-colors"
+              className="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium transition-colors"
             >
               Сохранить каналы
             </button>
@@ -283,15 +282,15 @@ export default function SystemSettingsView({ user }) {
       </div>
 
       {/* SECTION 3: Live Incoming Message Simulator */}
-      <div className="bg-slate-900/60 border border-indigo-900/40 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 space-y-4">
+        <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/60">
           <div className="flex items-center space-x-2">
-            <Play className="w-4 h-4 text-emerald-400" />
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+            <Play className="w-4 h-4 text-slate-400" />
+            <h2 className="text-xs font-semibold text-slate-200 uppercase tracking-wide">
               Симулятор входящих обращений (Telegram & Instagram)
             </h2>
           </div>
-          <span className="text-xs text-slate-400">Тестирование AI триажа и автоответов в 1 клик</span>
+          <span className="text-xs text-slate-400">Тестирование пайплайна в 1 клик</span>
         </div>
 
         <form onSubmit={handleSimulate} className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs items-end">
@@ -300,72 +299,72 @@ export default function SystemSettingsView({ user }) {
             <select
               value={simChannel}
               onChange={(e) => setSimChannel(e.target.value)}
-              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-semibold"
+              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
             >
-              <option value="telegram">Telegram (@bot)</option>
-              <option value="instagram">Instagram Direct</option>
+              <option value="telegram">Telegram</option>
+              <option value="instagram">Instagram</option>
             </select>
           </div>
 
           <div>
-            <label className="text-slate-400 font-medium">Имя клиента</label>
+            <label className="text-slate-400 font-medium">Имя абонента</label>
             <input
               type="text"
               value={simUserName}
               onChange={(e) => setSimUserName(e.target.value)}
-              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
+              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
             />
           </div>
 
           <div>
-            <label className="text-slate-400 font-medium">ID клиента</label>
+            <label className="text-slate-400 font-medium">ID абонента</label>
             <input
               type="text"
               value={simUserId}
               onChange={(e) => setSimUserId(e.target.value)}
-              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
             />
           </div>
 
           <button
             type="submit"
-            className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md shadow-emerald-600/30 flex items-center justify-center space-x-1.5 transition-colors"
+            className="px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium flex items-center justify-center space-x-1.5 transition-colors"
           >
-            <Play className="w-3.5 h-3.5" />
-            <span>Смоделировать запрос</span>
+            <Play className="w-3.5 h-3.5 text-slate-400" />
+            <span>Смоделировать обращение</span>
           </button>
 
           <div className="md:col-span-4">
-            <label className="text-slate-400 font-medium">Текст сообщения от абонента</label>
+            <label className="text-slate-400 font-medium">Текст сообщения</label>
             <input
               type="text"
               value={simText}
               onChange={(e) => setSimText(e.target.value)}
               placeholder="Например: Не работает VPN на iPhone через Wi-Fi Ростелеком..."
-              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
+              className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
             />
           </div>
         </form>
 
         {simStatus && (
-          <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300 font-mono">
+          <div className="p-2.5 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-300 font-mono">
             {simStatus}
           </div>
         )}
       </div>
 
       {/* SECTION 4: Staff Users & Roles */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 space-y-4">
+        <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/60">
           <div className="flex items-center space-x-2">
-            <Users className="w-4 h-4 text-purple-400" />
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+            <Users className="w-4 h-4 text-slate-400" />
+            <h2 className="text-xs font-semibold text-slate-200 uppercase tracking-wide">
               Сотрудники и роли (RBAC)
             </h2>
           </div>
           <button
             onClick={() => setShowUserModal(true)}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-xs font-semibold text-white transition-colors"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-200 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Добавить сотрудника</span>
@@ -375,7 +374,7 @@ export default function SystemSettingsView({ user }) {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950/60">
+              <tr className="border-b border-slate-800/80 text-slate-400 font-medium bg-slate-950/60">
                 <th className="py-2.5 px-3">Логин</th>
                 <th className="py-2.5 px-3">Имя сотрудника</th>
                 <th className="py-2.5 px-3">Email</th>
@@ -387,23 +386,18 @@ export default function SystemSettingsView({ user }) {
             <tbody className="divide-y divide-slate-900 text-slate-300">
               {users.map((u) => (
                 <tr key={u.id} className="hover:bg-slate-950/40 transition-colors">
-                  <td className="py-2.5 px-3 font-mono font-bold text-white">{u.username}</td>
-                  <td className="py-2.5 px-3 font-semibold">{u.full_name}</td>
+                  <td className="py-2.5 px-3 font-mono font-medium text-slate-200">{u.username}</td>
+                  <td className="py-2.5 px-3 text-slate-100">{u.full_name}</td>
                   <td className="py-2.5 px-3 text-slate-400">{u.email || '—'}</td>
                   <td className="py-2.5 px-3">
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${
-                      u.role === 'superroot' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                      u.role === 'director' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
-                      u.role === 'support_lead' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
-                      'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                    }`}>
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-slate-800 border border-slate-750 text-slate-300 font-mono">
                       {u.role}
                     </span>
                   </td>
                   <td className="py-2.5 px-3">
-                    <span className="text-emerald-400 font-semibold">● Активен</span>
+                    <span className="text-slate-300 font-medium">Активен</span>
                   </td>
-                  <td className="py-2.5 px-3 text-right text-slate-500">
+                  <td className="py-2.5 px-3 text-right text-slate-500 font-mono">
                     {u.last_login ? new Date(u.last_login).toLocaleString() : '—'}
                   </td>
                 </tr>
@@ -415,13 +409,13 @@ export default function SystemSettingsView({ user }) {
 
       {/* Modal: Create User */}
       {showUserModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="font-bold text-sm text-white">Добавить сотрудника</h3>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-800">
+              <h3 className="font-semibold text-xs text-slate-200 uppercase tracking-wide">Добавить сотрудника</h3>
               <button
                 onClick={() => setShowUserModal(false)}
-                className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded bg-slate-800"
+                className="text-slate-400 hover:text-white text-xs px-2 py-0.5 rounded bg-slate-800"
               >
                 Отмена
               </button>
@@ -435,7 +429,7 @@ export default function SystemSettingsView({ user }) {
                   required
                   value={newUser.username}
                   onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
+                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white font-mono"
                 />
               </div>
 
@@ -446,7 +440,7 @@ export default function SystemSettingsView({ user }) {
                   required
                   value={newUser.full_name}
                   onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
-                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
+                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
                 />
               </div>
 
@@ -455,7 +449,7 @@ export default function SystemSettingsView({ user }) {
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
+                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
                 >
                   <option value="support_agent">support_agent (Менеджер саппорта)</option>
                   <option value="support_lead">support_lead (Руководитель саппорта)</option>
@@ -471,7 +465,7 @@ export default function SystemSettingsView({ user }) {
                   required
                   value={newUser.password}
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
+                  className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-md p-2 text-white"
                 />
               </div>
 
@@ -479,13 +473,13 @@ export default function SystemSettingsView({ user }) {
                 <button
                   type="button"
                   onClick={() => setShowUserModal(false)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold"
+                  className="px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 font-medium"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold"
+                  className="px-4 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium"
                 >
                   Создать
                 </button>

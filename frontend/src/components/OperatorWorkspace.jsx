@@ -5,20 +5,13 @@ import {
   FileText, 
   Sparkles, 
   Bot, 
-  User, 
-  Smartphone, 
-  Radio, 
-  Layers, 
-  AlertCircle, 
-  CheckCircle, 
-  RefreshCw, 
   Search,
   MessageCircle,
-  SendHorizontal,
-  ChevronRight,
+  RefreshCw,
+  Check,
   Shield,
-  HelpCircle,
-  Check
+  Layers,
+  HelpCircle
 } from 'lucide-react';
 import { InstagramIcon } from './Icons';
 import { api } from '../api';
@@ -66,7 +59,6 @@ export default function OperatorWorkspace({ user }) {
     }
   };
 
-  // Load taxonomy once
   useEffect(() => {
     api.tickets.getTaxonomy().then(setTaxonomy).catch(console.error);
   }, []);
@@ -75,7 +67,6 @@ export default function OperatorWorkspace({ user }) {
     loadTickets();
   }, [channelFilter, statusFilter, searchQuery]);
 
-  // Load selected ticket details
   const loadTicketDetails = async (id) => {
     if (!id) return;
     try {
@@ -116,7 +107,6 @@ export default function OperatorWorkspace({ user }) {
     }
   }, [selectedTicketId]);
 
-  // Send message
   const handleSendMessage = async (e) => {
     e?.preventDefault();
     if (!messageText.trim() || !selectedTicketId) return;
@@ -138,7 +128,6 @@ export default function OperatorWorkspace({ user }) {
     }
   };
 
-  // Save passport
   const handleSavePassport = async () => {
     if (!selectedTicketId) return;
     setSavingPassport(true);
@@ -155,7 +144,6 @@ export default function OperatorWorkspace({ user }) {
     }
   };
 
-  // AI Assistant triggers
   const handleAiSuggest = async () => {
     if (!selectedTicketId) return;
     setAiLoading(true);
@@ -183,7 +171,6 @@ export default function OperatorWorkspace({ user }) {
     }
   };
 
-  // Fast Actions
   const handleSendKey = async () => {
     if (!selectedTicketId) return;
     await api.tickets.sendKey(selectedTicketId);
@@ -205,45 +192,42 @@ export default function OperatorWorkspace({ user }) {
   };
 
   return (
-    <div className="h-[calc(100vh-61px)] flex flex-col md:flex-row overflow-hidden bg-slate-950">
+    <div className="h-[calc(100vh-53px)] flex flex-col md:flex-row overflow-hidden bg-slate-950">
       {/* COLUMN 1: Ticket Queue List */}
-      <div className="w-full md:w-80 lg:w-96 border-r border-slate-800 flex flex-col bg-slate-950/90 shrink-0">
-        {/* Filters Header */}
-        <div className="p-3 border-b border-slate-800 space-y-2.5">
+      <div className="w-full md:w-80 lg:w-88 border-r border-slate-800/80 flex flex-col bg-slate-950 shrink-0">
+        <div className="p-3 border-b border-slate-800/80 space-y-2">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-500" />
             <input
               type="text"
               placeholder="Поиск по номеру, имени, ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-900 border border-slate-800 rounded-md pl-8 pr-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-700"
             />
           </div>
 
-          <div className="flex items-center justify-between space-x-2 text-xs">
-            {/* Channel filter */}
+          <div className="flex items-center space-x-1.5 text-xs">
             <select
               value={channelFilter}
               onChange={(e) => setChannelFilter(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 text-xs focus:outline-none focus:border-indigo-500 flex-1"
+              className="bg-slate-900 border border-slate-800 rounded-md px-2 py-1 text-slate-300 text-xs focus:outline-none focus:border-slate-700 flex-1"
             >
               <option value="">Все каналы</option>
-              <option value="telegram">Telegram (@bot)</option>
-              <option value="instagram">Instagram Direct</option>
+              <option value="telegram">Telegram</option>
+              <option value="instagram">Instagram</option>
             </select>
 
-            {/* Status filter */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 text-xs focus:outline-none focus:border-indigo-500 flex-1"
+              className="bg-slate-900 border border-slate-800 rounded-md px-2 py-1 text-slate-300 text-xs focus:outline-none focus:border-slate-700 flex-1"
             >
               <option value="">Все статусы</option>
               <option value="new">Новые</option>
               <option value="in_progress">В работе</option>
               <option value="escalated">Эскалированы</option>
-              <option value="resolved">Решенные</option>
+              <option value="resolved">Решённые</option>
             </select>
 
             <button
@@ -269,54 +253,53 @@ export default function OperatorWorkspace({ user }) {
                 <div
                   key={t.id}
                   onClick={() => setSelectedTicketId(t.id)}
-                  className={`p-3 cursor-pointer transition-all hover:bg-slate-900/60 ${
-                    isSelected ? 'bg-indigo-950/30 border-l-2 border-indigo-500' : ''
+                  className={`p-3 cursor-pointer transition-colors ${
+                    isSelected ? 'bg-slate-900 border-l-2 border-slate-400' : 'hover:bg-slate-900/40'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-1.5">
                       {t.channel === 'telegram' ? (
-                        <span className="p-1 rounded bg-cyan-500/10 text-cyan-400" title="Telegram">
+                        <span className="p-0.5 rounded text-slate-400" title="Telegram">
                           <MessageCircle className="w-3 h-3" />
                         </span>
                       ) : (
-                        <span className="p-1 rounded bg-pink-500/10 text-pink-400" title="Instagram">
+                        <span className="p-0.5 rounded text-slate-400" title="Instagram">
                           <InstagramIcon className="w-3 h-3" />
                         </span>
                       )}
-                      <span className="font-semibold text-xs text-white truncate max-w-[120px]">
+                      <span className="font-semibold text-xs text-slate-200 truncate max-w-[130px]">
                         {t.channel_user_name || t.channel_user_id}
                       </span>
                     </div>
 
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center space-x-1.5 font-mono">
                       <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                        t.severity === 'P0' ? 'bg-red-500 text-white animate-pulse' :
-                        t.severity === 'P1' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
-                        t.severity === 'P2' ? 'bg-amber-500/20 text-amber-400' :
-                        'bg-slate-800 text-slate-400'
+                        t.severity === 'P0' ? 'bg-rose-950 text-rose-300 border border-rose-800' :
+                        t.severity === 'P1' ? 'bg-slate-800 text-rose-300' :
+                        t.severity === 'P2' ? 'bg-slate-800 text-slate-300' :
+                        'bg-slate-900 text-slate-500'
                       }`}>
                         {t.severity}
                       </span>
-                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-medium ${
-                        t.status === 'new' ? 'bg-emerald-500/20 text-emerald-400' :
-                        t.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
-                        t.status === 'escalated' ? 'bg-purple-500/20 text-purple-400' :
-                        'bg-slate-800 text-slate-400'
+                      <span className={`px-1.5 py-0.2 rounded text-[10px] ${
+                        t.status === 'new' ? 'text-emerald-400 font-medium' :
+                        t.status === 'in_progress' ? 'text-slate-300' :
+                        'text-slate-500'
                       }`}>
                         {t.status}
                       </span>
                     </div>
                   </div>
 
-                  <div className="text-[11px] font-medium text-slate-300 line-clamp-1 mb-1">
+                  <div className="text-[11px] text-slate-300 line-clamp-1 mb-1">
                     {t.category ? (
-                      <span className="text-indigo-400 font-semibold">{t.category}: </span>
+                      <span className="text-slate-400 font-medium">{t.category}: </span>
                     ) : null}
                     {t.problem || t.last_message || 'Без описания'}
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] text-slate-500">
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
                     <span>{t.ticket_number}</span>
                     <span>{t.device || 'Платформа не указана'}</span>
                   </div>
@@ -327,85 +310,85 @@ export default function OperatorWorkspace({ user }) {
         </div>
       </div>
 
-      {/* COLUMN 2: Chat & Fast Actions */}
-      <div className="flex-1 flex flex-col border-r border-slate-800 bg-slate-950 min-w-0">
+      {/* COLUMN 2: Chat & Actions */}
+      <div className="flex-1 flex flex-col border-r border-slate-800/80 bg-slate-950 min-w-0">
         {selectedTicket ? (
           <>
-            {/* Ticket Chat Header */}
-            <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
+            {/* Header */}
+            <div className="p-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-950">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-300">
+                <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-xs font-semibold text-slate-300">
                   {selectedTicket.channel_user_name?.charAt(0) || 'U'}
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-bold text-xs text-white">{selectedTicket.channel_user_name}</span>
-                    <span className="text-[10px] text-slate-400">{selectedTicket.channel_user_handle}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                    <span className="font-semibold text-xs text-slate-100">{selectedTicket.channel_user_name}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">{selectedTicket.channel_user_handle}</span>
+                    <span className="text-[10px] px-1 py-0.2 rounded bg-slate-900 text-slate-400 border border-slate-800 font-mono">
                       ID: {selectedTicket.channel_user_id}
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-500 flex items-center space-x-2">
-                    <span>Канал: <strong className="text-slate-300 capitalize">{selectedTicket.channel}</strong></span>
+                  <div className="text-[10px] text-slate-500 flex items-center space-x-2 font-mono">
+                    <span>Канал: <strong className="text-slate-400 capitalize">{selectedTicket.channel}</strong></span>
                     <span>•</span>
-                    <span>Номер тикета: <strong className="text-slate-300">{selectedTicket.ticket_number}</strong></span>
+                    <span>Тикет: <strong className="text-slate-400">{selectedTicket.ticket_number}</strong></span>
                   </div>
                 </div>
               </div>
 
-              {/* Fast Action Buttons in Chat Header */}
+              {/* Fast Action Buttons */}
               <div className="flex items-center space-x-1.5">
                 <button
                   onClick={handleSendKey}
-                  className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-medium transition-colors"
-                  title="Отправить действующий ключ клиенту в чат"
+                  className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-medium transition-colors"
+                  title="Отправить действующий ключ абоненту"
                 >
-                  <Key className="w-3 h-3" />
+                  <Key className="w-3 h-3 text-slate-400" />
                   <span>Отправить ключ</span>
                 </button>
 
                 <div className="relative group">
                   <button
-                    className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
+                    className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-medium transition-colors"
                   >
-                    <FileText className="w-3 h-3" />
+                    <FileText className="w-3 h-3 text-slate-400" />
                     <span>Инструкция</span>
                   </button>
-                  <div className="absolute right-0 mt-1 hidden group-hover:flex flex-col bg-slate-900 border border-slate-800 rounded-lg shadow-xl py-1 z-30 min-w-[130px]">
+                  <div className="absolute right-0 mt-1 hidden group-hover:flex flex-col bg-slate-900 border border-slate-800 rounded-md shadow-xl py-1 z-30 min-w-[130px]">
                     <button
                       onClick={() => handleSendGuide('iPhone')}
                       className="px-3 py-1 text-left text-xs text-slate-300 hover:bg-slate-800"
                     >
-                      📱 iOS (iPhone)
+                      iOS (iPhone)
                     </button>
                     <button
                       onClick={() => handleSendGuide('Android')}
                       className="px-3 py-1 text-left text-xs text-slate-300 hover:bg-slate-800"
                     >
-                      🤖 Android
+                      Android
                     </button>
                     <button
                       onClick={() => handleSendGuide('Windows')}
                       className="px-3 py-1 text-left text-xs text-slate-300 hover:bg-slate-800"
                     >
-                      💻 Windows
+                      Windows
                     </button>
                   </div>
                 </div>
 
                 <button
                   onClick={handleRecreateKey}
-                  className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-colors"
-                  title="Сбросить и перевыпустить ключ на новом сервере"
+                  className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-medium transition-colors"
+                  title="Сбросить и перевыпустить ключ"
                 >
-                  <RefreshCw className="w-3 h-3" />
+                  <RefreshCw className="w-3 h-3 text-slate-400" />
                   <span>Пересоздать ключ</span>
                 </button>
               </div>
             </div>
 
-            {/* Chat Message Stream */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-slate-950/60">
+            {/* Message Stream */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950">
               {messages.map((m) => {
                 const isClient = m.sender_type === 'client';
                 const isAI = m.sender_type === 'ai';
@@ -414,20 +397,20 @@ export default function OperatorWorkspace({ user }) {
                     key={m.id}
                     className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
                   >
-                    <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 mb-1 px-1">
-                      {isAI && <Bot className="w-3 h-3 text-cyan-400" />}
-                      <span className="font-semibold text-slate-400">{m.sender_name || m.sender_type}</span>
+                    <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 mb-1 px-1 font-mono">
+                      {isAI && <Bot className="w-3 h-3 text-slate-400" />}
+                      <span>{m.sender_name || m.sender_type}</span>
                       <span>•</span>
                       <span>{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
 
                     <div
-                      className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
+                      className={`max-w-[85%] rounded-xl px-3.5 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
                         isClient
                           ? 'bg-slate-900 border border-slate-800 text-slate-200'
                           : isAI
-                          ? 'bg-cyan-950/50 border border-cyan-800/60 text-cyan-100 shadow-sm'
-                          : 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                          ? 'bg-slate-900/90 border border-slate-750 text-slate-200'
+                          : 'bg-slate-800 border border-slate-700 text-slate-100'
                       }`}
                     >
                       {m.message_text}
@@ -437,19 +420,19 @@ export default function OperatorWorkspace({ user }) {
               })}
             </div>
 
-            {/* AI Suggested Response Banner if available */}
+            {/* AI Suggestion Banner */}
             {aiSuggestion && (
-              <div className="mx-4 mb-2 p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-xs">
-                <div className="flex items-center justify-between pb-1.5 border-b border-cyan-900/40 mb-2">
-                  <div className="flex items-center space-x-1.5 text-cyan-400 font-semibold">
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Предложение от ИИ Copilot ({aiSuggestion.model_used})</span>
+              <div className="mx-4 mb-2 p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs space-y-2">
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
+                  <div className="flex items-center space-x-1.5 text-slate-300 font-medium">
+                    <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Предложение ответа ИИ ({aiSuggestion.model_used})</span>
                   </div>
                   <button
                     onClick={() => setMessageText(aiSuggestion.suggested_reply)}
-                    className="px-2 py-0.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-[11px] transition-colors"
+                    className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium transition-colors"
                   >
-                    Вставить в чат
+                    Вставить в поле ввода
                   </button>
                 </div>
                 <div className="text-slate-300 font-mono text-[11px] leading-relaxed line-clamp-3">
@@ -458,77 +441,77 @@ export default function OperatorWorkspace({ user }) {
               </div>
             )}
 
-            {/* Message Input Box */}
-            <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-800 bg-slate-900/40 flex items-center space-x-2">
+            {/* Composer */}
+            <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-800/80 bg-slate-950 flex items-center space-x-2">
               <input
                 type="text"
-                placeholder="Напишите ответ клиенту (отправится в TG или IG)..."
+                placeholder="Текст ответа клиенту (отправится в Telegram или Instagram)..."
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="flex-1 bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-slate-700"
               />
               <button
                 type="submit"
                 disabled={sendingMsg || !messageText.trim()}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs flex items-center space-x-1.5 transition-colors shadow-md shadow-indigo-600/30"
+                className="px-3.5 py-2 rounded-md bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-100 font-medium text-xs flex items-center space-x-1.5 border border-slate-700 transition-colors"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-3.5 h-3.5 text-slate-400" />
                 <span>Отправить</span>
               </button>
             </form>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-slate-500 text-xs">
-            Выберите тикет для просмотра переписки
+            Выберите обращение в левом списке
           </div>
         )}
       </div>
 
-      {/* COLUMN 3: Ticket Passport & AI Copilot Panel */}
-      <div className="w-full md:w-80 lg:w-96 border-l border-slate-800 overflow-y-auto bg-slate-950 p-4 space-y-4 shrink-0">
+      {/* COLUMN 3: Ticket Passport & VPN Inspector */}
+      <div className="w-full md:w-80 lg:w-88 border-l border-slate-800/80 overflow-y-auto bg-slate-950 p-4 space-y-4 shrink-0">
         {selectedTicket ? (
           <>
-            {/* Header of Passport */}
+            {/* Header */}
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <div className="flex items-center space-x-1.5">
-                <Shield className="w-4 h-4 text-indigo-400" />
-                <h3 className="font-bold text-xs uppercase tracking-wider text-white">Паспорт обращения</h3>
+                <Shield className="w-3.5 h-3.5 text-slate-400" />
+                <h3 className="font-semibold text-xs uppercase tracking-wide text-slate-300">Паспорт обращения</h3>
               </div>
               <button
                 onClick={handleSavePassport}
                 disabled={savingPassport}
-                className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center space-x-1 transition-colors"
+                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium flex items-center space-x-1 transition-colors"
               >
-                {passportSavedNotice ? <Check className="w-3 h-3 text-emerald-300" /> : null}
-                <span>{passportSavedNotice ? 'Сохранено!' : 'Сохранить'}</span>
+                {passportSavedNotice ? <Check className="w-3 h-3 text-emerald-400" /> : null}
+                <span>{passportSavedNotice ? 'Сохранено' : 'Сохранить'}</span>
               </button>
             </div>
 
-            {/* AI Copilot & Triage triggers */}
-            <div className="bg-indigo-950/30 border border-indigo-900/40 rounded-xl p-3 space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold text-indigo-300">
+            {/* AI Assist Module */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between text-xs font-medium text-slate-300">
                 <span className="flex items-center space-x-1">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>OpenRouter AI Ассистент</span>
+                  <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+                  <span>ИИ Ассистент (OpenRouter Pool)</span>
                 </span>
-                <span className="text-[10px] text-slate-400">Пул Free моделей</span>
+                <span className="text-[10px] text-slate-500">Авто-failover</span>
               </div>
 
               {selectedTicket.ai_diagnostic_summary && (
-                <div className="text-[11px] text-slate-300 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-                  <span className="font-semibold text-indigo-400">Диагноз ИИ: </span>
+                <div className="text-[11px] text-slate-300 bg-slate-950 p-2 rounded border border-slate-800/80">
+                  <span className="font-semibold text-slate-400">Диагноз ИИ: </span>
                   {selectedTicket.ai_diagnostic_summary}
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
                 <button
                   type="button"
                   onClick={handleAiTriage}
                   disabled={aiLoading}
-                  className="px-2 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 text-[11px] font-medium text-slate-300 flex items-center justify-center space-x-1 transition-colors"
+                  className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] font-medium text-slate-300 flex items-center justify-center space-x-1 transition-colors"
                 >
-                  <Bot className="w-3 h-3 text-indigo-400" />
+                  <Bot className="w-3 h-3 text-slate-400" />
                   <span>AI Триаж</span>
                 </button>
 
@@ -536,23 +519,22 @@ export default function OperatorWorkspace({ user }) {
                   type="button"
                   onClick={handleAiSuggest}
                   disabled={aiLoading}
-                  className="px-2 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-[11px] font-semibold text-white flex items-center justify-center space-x-1 transition-colors shadow-sm"
+                  className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-medium text-slate-200 flex items-center justify-center space-x-1 transition-colors"
                 >
-                  <Sparkles className="w-3 h-3" />
+                  <Sparkles className="w-3 h-3 text-slate-400" />
                   <span>Ответ от ИИ</span>
                 </button>
               </div>
             </div>
 
-            {/* Passport Form Fields */}
+            {/* Level 1 & Level 2 Passport Inputs */}
             <div className="space-y-3 text-xs">
-              {/* Level 1: Category & Subcategory */}
               <div className="space-y-1">
                 <label className="text-slate-400 font-medium">Категория (Level 1)</label>
                 <select
                   value={passport.category || ''}
                   onChange={(e) => setPassport({ ...passport, category: e.target.value, subcategory: '' })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-md px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700"
                 >
                   <option value="">-- Выберите категорию --</option>
                   {taxonomy && Object.keys(taxonomy.categories).map((cat) => (
@@ -567,7 +549,7 @@ export default function OperatorWorkspace({ user }) {
                   <select
                     value={passport.subcategory || ''}
                     onChange={(e) => setPassport({ ...passport, subcategory: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-md px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700"
                   >
                     <option value="">-- Подкатегория --</option>
                     {taxonomy.categories[passport.category].map((sub) => (
@@ -577,14 +559,14 @@ export default function OperatorWorkspace({ user }) {
                 </div>
               )}
 
-              {/* Level 2: 7 Passport Fields */}
+              {/* 7 Fields Grid */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-slate-400 font-medium">Устройство (Платформа)</label>
+                  <label className="text-slate-400 font-medium">Устройство</label>
                   <select
                     value={passport.device || ''}
                     onChange={(e) => setPassport({ ...passport, device: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-md px-2 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700"
                   >
                     <option value="">-- Платформа --</option>
                     {taxonomy?.devices.map((d) => (
@@ -598,7 +580,7 @@ export default function OperatorWorkspace({ user }) {
                   <select
                     value={passport.operator || ''}
                     onChange={(e) => setPassport({ ...passport, operator: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-md px-2 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700"
                   >
                     <option value="">-- Оператор --</option>
                     {taxonomy?.operators.map((o) => (
@@ -614,7 +596,7 @@ export default function OperatorWorkspace({ user }) {
                   <select
                     value={passport.app || ''}
                     onChange={(e) => setPassport({ ...passport, app: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-md px-2 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700"
                   >
                     <option value="">-- Приложение --</option>
                     {taxonomy?.apps.map((a) => (
@@ -628,12 +610,12 @@ export default function OperatorWorkspace({ user }) {
                   <select
                     value={passport.severity || 'P2'}
                     onChange={(e) => setPassport({ ...passport, severity: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-md px-2 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700 font-mono"
                   >
-                    <option value="P0">P0 (Массовая авария)</option>
-                    <option value="P1">P1 (Критичная индив.)</option>
-                    <option value="P2">P2 (Стандартная тех.)</option>
-                    <option value="P3">P3 (Вопрос / Onboarding)</option>
+                    <option value="P0">P0 (Авария)</option>
+                    <option value="P1">P1 (Критичная)</option>
+                    <option value="P2">P2 (Стандарт)</option>
+                    <option value="P3">P3 (Инструкция / FAQ)</option>
                   </select>
                 </div>
               </div>
@@ -644,8 +626,8 @@ export default function OperatorWorkspace({ user }) {
                   type="text"
                   value={passport.problem || ''}
                   onChange={(e) => setPassport({ ...passport, problem: e.target.value })}
-                  placeholder="Суть проблемы..."
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                  placeholder="Суть неполадки..."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-md px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700"
                 />
               </div>
 
@@ -655,8 +637,8 @@ export default function OperatorWorkspace({ user }) {
                   type="text"
                   value={passport.cause || ''}
                   onChange={(e) => setPassport({ ...passport, cause: e.target.value })}
-                  placeholder="Блокировка оператора, сбой сервера..."
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                  placeholder="Блокировка оператора, перегрузка сервера..."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-md px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700"
                 />
               </div>
 
@@ -666,8 +648,8 @@ export default function OperatorWorkspace({ user }) {
                   type="text"
                   value={passport.result || ''}
                   onChange={(e) => setPassport({ ...passport, result: e.target.value })}
-                  placeholder="Решено сменой протокола, выдан ключ..."
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                  placeholder="Решено сменой протокола..."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-md px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700"
                 />
               </div>
 
@@ -677,7 +659,7 @@ export default function OperatorWorkspace({ user }) {
                   <select
                     value={passport.status || 'new'}
                     onChange={(e) => setPassport({ ...passport, status: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-md px-2 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700 font-medium"
                   >
                     <option value="new">Новый</option>
                     <option value="in_progress">В работе</option>
@@ -688,46 +670,46 @@ export default function OperatorWorkspace({ user }) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-slate-400 font-medium">Помогла инструкция</label>
+                  <label className="text-slate-400 font-medium">Помог ли гайд</label>
                   <select
                     value={passport.instruction_helped === true ? '1' : passport.instruction_helped === false ? '0' : ''}
                     onChange={(e) => setPassport({ 
                       ...passport, 
                       instruction_helped: e.target.value === '1' ? true : e.target.value === '0' ? false : null 
                     })}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-md px-2 py-1.5 text-slate-200 focus:outline-none focus:border-slate-700"
                   >
                     <option value="">Неизвестно</option>
-                    <option value="1">Да (Помогла)</option>
-                    <option value="0">Нет (Не помогла)</option>
+                    <option value="1">Да (Помог)</option>
+                    <option value="0">Нет</option>
                   </select>
                 </div>
               </div>
             </div>
 
             {/* VPN Client Keys Card */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 space-y-2">
+            <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
                 <span className="flex items-center space-x-1">
-                  <Key className="w-3.5 h-3.5 text-amber-400" />
+                  <Key className="w-3.5 h-3.5 text-slate-400" />
                   <span>Действующие ключи VPN</span>
                 </span>
-                <span className="text-[10px] text-slate-400">databasetop hook</span>
+                <span className="text-[10px] text-slate-500 font-mono">databasetop</span>
               </div>
 
               {vpnKeys.length > 0 ? (
                 vpnKeys.map((k) => (
-                  <div key={k.id} className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80 space-y-1 text-[11px]">
+                  <div key={k.id} className="bg-slate-950 p-2.5 rounded border border-slate-800/80 space-y-1 text-[11px]">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-white">{k.server} • {k.protocol}</span>
-                      <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-semibold text-[10px]">
+                      <span className="font-semibold text-slate-200">{k.server} • {k.protocol}</span>
+                      <span className="px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 text-[10px] font-mono">
                         {k.subscription_status}
                       </span>
                     </div>
                     <div className="font-mono text-[10px] text-slate-400 truncate">
                       {k.key_string}
                     </div>
-                    <div className="text-[10px] text-slate-500 flex justify-between">
+                    <div className="text-[10px] text-slate-500 flex justify-between font-mono">
                       <span>Трафик: {k.traffic_used_gb} / {k.traffic_limit_gb} GB</span>
                       <span>До: {k.expires_at || 'бессрочно'}</span>
                     </div>

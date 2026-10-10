@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, User, ArrowRight, Sparkles } from 'lucide-react';
+import { ShieldCheck, Lock, User, ArrowRight } from 'lucide-react';
 import { api, setToken } from '../api';
 
 export default function LoginModal({ onLoginSuccess }) {
@@ -34,22 +34,19 @@ export default function LoginModal({ onLoginSuccess }) {
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
-        {/* Decorative blur */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
+      <div className="max-w-md w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl relative">
         <div className="flex flex-col items-center text-center space-y-2 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 mb-1">
-            <ShieldCheck className="w-7 h-7 text-white" />
+          <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 mb-1">
+            <ShieldCheck className="w-5 h-5 text-indigo-400" />
           </div>
-          <h1 className="text-xl font-black text-white tracking-tight">TOPBOX SUPPORT OS</h1>
+          <h1 className="text-lg font-bold text-slate-100 tracking-tight">TOPBOX SUPPORT OS</h1>
           <p className="text-xs text-slate-400">
             Система контроля качества и омниканальной поддержки на 40 000 абонентов
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs text-center font-medium">
+          <div className="mb-4 p-2.5 rounded-lg bg-rose-950/40 border border-rose-900/50 text-rose-300 text-xs text-center font-medium">
             {error}
           </div>
         )}
@@ -65,7 +62,7 @@ export default function LoginModal({ onLoginSuccess }) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="agent / director / superroot"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-white focus:outline-none focus:border-slate-750 font-medium"
               />
             </div>
           </div>
@@ -80,7 +77,7 @@ export default function LoginModal({ onLoginSuccess }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-white focus:outline-none focus:border-slate-750"
               />
             </div>
           </div>
@@ -88,51 +85,50 @@ export default function LoginModal({ onLoginSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-lg shadow-indigo-600/30"
+            className="w-full mt-2 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 disabled:opacity-50 text-slate-100 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-colors"
           >
             <span>{loading ? 'Авторизация...' : 'Войти в систему'}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
           </button>
         </form>
 
         {/* Quick Demo Logins */}
         <div className="mt-6 pt-5 border-t border-slate-800/80">
-          <div className="text-[11px] font-semibold text-slate-400 text-center mb-3 uppercase tracking-wider flex items-center justify-center space-x-1">
-            <Sparkles className="w-3 h-3 text-amber-400" />
-            <span>Быстрый вход для демонстрации (1 клик):</span>
+          <div className="text-[11px] font-semibold text-slate-400 text-center mb-3 uppercase tracking-wider">
+            Быстрый вход для тестирования (в 1 клик):
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-[11px]">
             <button
               onClick={() => handleQuickDemo('director', 'director123')}
-              className="p-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/50 border border-purple-800/40 text-purple-300 font-semibold text-left transition-colors"
+              className="p-2 rounded-lg bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 font-medium text-left transition-colors"
             >
-              📊 Директор
-              <div className="text-[10px] text-slate-400 font-normal">VPN Health, 40k метрики</div>
+              Директор
+              <div className="text-[10px] text-slate-500">VPN Health, метрики 40k</div>
             </button>
 
             <button
               onClick={() => handleQuickDemo('lead', 'lead123')}
-              className="p-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-800/40 text-amber-300 font-semibold text-left transition-colors"
+              className="p-2 rounded-lg bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 font-medium text-left transition-colors"
             >
-              👑 Тимлид / Аналитик
-              <div className="text-[10px] text-slate-400 font-normal">Problem Register, SLA</div>
+              Руководитель
+              <div className="text-[10px] text-slate-500">Problem Register, SLA</div>
             </button>
 
             <button
               onClick={() => handleQuickDemo('agent', 'agent123')}
-              className="p-2 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/40 text-emerald-300 font-semibold text-left transition-colors"
+              className="p-2 rounded-lg bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 font-medium text-left transition-colors"
             >
-              👤 Менеджер саппорта
-              <div className="text-[10px] text-slate-400 font-normal">Чат, паспорт, ИИ, ключи</div>
+              Менеджер саппорта
+              <div className="text-[10px] text-slate-500">Чат, паспорт, ИИ, ключи</div>
             </button>
 
             <button
               onClick={() => handleQuickDemo('superroot', 'admin123')}
-              className="p-2 rounded-xl bg-red-950/40 hover:bg-red-900/50 border border-red-800/40 text-red-300 font-semibold text-left transition-colors"
+              className="p-2 rounded-lg bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 font-medium text-left transition-colors"
             >
-              ⚡ Суперрут (Root)
-              <div className="text-[10px] text-slate-400 font-normal">Все настройки, симулятор</div>
+              Суперрут
+              <div className="text-[10px] text-slate-500">Интеграции, симулятор</div>
             </button>
           </div>
         </div>
