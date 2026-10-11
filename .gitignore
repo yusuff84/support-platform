@@ -21,3 +21,4 @@ htmlcov/
 
 # Local data & logs
 *.log
+.env
