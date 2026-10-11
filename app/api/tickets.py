@@ -359,20 +359,21 @@ async def send_user_key(
 
     keys = await get_vpn_client_keys(ticket["channel_user_id"], db)
     if not keys:
-        key_text = "🔑 Для вашего аккаунта не найден активный ключ. Создаём новый ключ..."
+        key_text = "🔑 Для вашего аккаунта не найден активный ключ в базе данных. Вы можете оформить подписку в основном боте по кнопке «Купить VPN»."
     else:
         k = keys[0]
+        tariff_name = k.get("tariff_name") or "VPN-подписка"
+        exp_date = k.get("expires_at") or "бессрочно"
+        link = k.get("key_string") or ""
         key_text = (
-            f"🔑 Ваш действующий ключ VPN:\n\n"
-            f"`{k['key_string']}`\n\n"
-            f"• Протокол: {k['protocol']}\n"
-            f"• Сервер: {k['server']}\n"
-            f"• Статус: {k['subscription_status']}\n"
-            f"• Срок действия: до {k['expires_at'] or 'бессрочно'}\n\n"
-            f"Скопируйте ключ и вставьте его в приложение (Amnezia / Happ / Outline)."
+            "🔑 <b>Ваша активная VPN-подписка</b>\n\n"
+            f"Тариф: <b>{tariff_name}</b>\n"
+            f"Действует до: <b>{exp_date}</b>\n\n"
+            f"Ссылка подписки:\n{link}\n\n"
+            "Откройте ссылку, выберите своё устройство (Incy / Happ) и следуйте инструкции.\n"
+            "Если появятся вопросы — напишите нам в чат!"
         )
 
-    # Insert message
     msg = MessageCreate(ticket_id=ticket_id, message_text=key_text, sender_type="operator")
     return await send_ticket_message(ticket_id, msg, current_user, db)
 
@@ -394,26 +395,29 @@ async def recreate_user_key(
     if ticket["channel"] != "telegram":
         raise HTTPException(
             status_code=400,
-            detail="Замена и пересоздание ключей производятся исключительно через Telegram-бота (@topvpnhelp_bot). Для Instagram данное действие недоступно."
+            detail="Замена и пересоздание ключей производятся исключительно через Telegram-бота (@topvpnhelp_bot)."
         )
 
     new_key = await recreate_vpn_client_key(
         user_id=ticket["channel_user_id"],
         protocol=req.protocol or "Vless",
-        server=req.server or "NL-03",
+        server=req.server or "remna2",
         db=db
     )
 
+    link = new_key.get("key_string", "")
+    exp = new_key.get("expires_at", "бессрочно")
     result_text = (
-        f"⚡ Ваш ключ был успешно пересоздан на новом сервере ({new_key['server']}) с протоколом {new_key['protocol']}:\n\n"
-        f"`{new_key['key_string']}`\n\n"
-        f"Старый ключ деактивирован. Пожалуйста, замените ключ в приложении и подключитесь заново."
+        "⚡ <b>Ваш ключ был успешно перевыпущен</b>:\n\n"
+        f"Ссылка подписки:\n{link}\n\n"
+        f"Действует до: {exp}\n\n"
+        "Старый ключ деактивирован. Пожалуйста, откройте ссылку и обновите подключение в приложении (Incy / Happ)."
     )
 
     # Update passport result
     await db.execute(
         "UPDATE tickets SET result = 'решено перевыпуском ключа / сменой сервера', server = ?, protocol = ? WHERE id = ?",
-        (new_key['server'], new_key['protocol'], ticket_id)
+        (new_key.get('server', 'remna2'), new_key.get('protocol', 'Vless'), ticket_id)
     )
     await db.commit()
 
