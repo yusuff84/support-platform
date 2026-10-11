@@ -6,7 +6,7 @@ async def detect_drilldown_anomalies(db: aiosqlite.Connection, days: int = 14) -
     """
     Detects Level 5 multi-dimensional anomalies:
     Groups by (category, device, operator, app) to find patterns like:
-    'Android + МТС + Amnezia = 380 обращений' (ITIL Problem candidate)
+    'Android + МТС + Incy = 380 обращений' (ITIL Problem candidate)
     """
     since_date = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
 

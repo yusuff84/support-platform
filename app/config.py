@@ -71,8 +71,8 @@ CATEGORIES_TAXONOMY: Dict[str, List[str]] = {
 # Standard Supported Options for Ticket Passport Fields
 DEVICES_LIST: List[str] = ["iPhone", "Android", "Windows", "Mac", "Linux", "Роутер", "Другое"]
 OPERATORS_LIST: List[str] = ["МТС", "Мегафон", "Билайн", "Tele2", "Ростелеком", "Wi-Fi", "Другой"]
-APPS_LIST: List[str] = ["Amnezia", "Outline", "v2rayNG", "Happ", "V2RayTun", "Shadowrocket", "Streisand", "Karing", "Другое"]
-PROTOCOLS_LIST: List[str] = ["Vless", "ShadowSocks", "Amnezia WG", "Trojan", "WireGuard", "OpenVPN", "Другой"]
+APPS_LIST: List[str] = ["Incy", "Happ", "v2rayNG", "V2RayTun", "Outline", "Shadowrocket", "Streisand", "Karing", "Другое"]
+PROTOCOLS_LIST: List[str] = ["Vless-Reality", "Vless", "ShadowSocks", "Trojan", "WireGuard", "OpenVPN", "Другой"]
 SEVERITY_LEVELS: List[str] = ["P0", "P1", "P2", "P3"]
 TICKET_STATUSES: List[str] = ["new", "in_progress", "escalated", "resolved", "closed"]
 USER_ROLES: List[str] = ["support_agent", "support_lead", "director", "superroot"]

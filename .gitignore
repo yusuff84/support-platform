@@ -22,3 +22,5 @@ htmlcov/
 # Local data & logs
 *.log
 .env
+data/*.sqlite3
+*.sqlite3

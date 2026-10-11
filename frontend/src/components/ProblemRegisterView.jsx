@@ -29,7 +29,7 @@ export default function ProblemRegisterView({ user }) {
     category: 'Не подключается',
     device: 'Android',
     operator: 'МТС',
-    app: 'Amnezia',
+    app: 'Incy',
     server: 'NL-03',
     occurrences_count: 50,
     affected_users_count: 45,

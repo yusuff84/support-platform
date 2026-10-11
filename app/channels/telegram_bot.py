@@ -136,7 +136,7 @@ def create_diagnostic_kb_problem():
 def create_diagnostic_kb_app():
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="Amnezia VPN", callback_data="diag_app:Amnezia"),
+            InlineKeyboardButton(text="Incy", callback_data="diag_app:Incy"),
             InlineKeyboardButton(text="Happ", callback_data="diag_app:Happ")
         ],
         [
@@ -286,7 +286,7 @@ def setup_bot_dispatcher() -> Dispatcher:
                     f"• Сервер: {k['server']}\n"
                     f"• Протокол: {k['protocol']}\n"
                     f"• Статус: {k['subscription_status']}\n\n"
-                    f"Вставьте этот ключ в приложение Amnezia VPN / Happ / Outline."
+                    f"Вставьте этот ключ в приложение Incy / Happ / V2RayTun / Outline."
                 )
             else:
                 text = "Для вашего Telegram ID не найдено активных ключей. Напишите нам сообщение, и оператор проверит ваши подписки."
@@ -297,7 +297,7 @@ def setup_bot_dispatcher() -> Dispatcher:
     async def cb_get_guide(callback: types.CallbackQuery):
         guide = (
             "📖 Как подключить TOPBOX VPN:\n\n"
-            "1. Установите приложение Amnezia VPN или Happ (из App Store / Google Play).\n"
+            "1. Установите приложение Incy или Happ (из App Store / Google Play).\n"
             "2. Скопируйте ваш ключ (кнопка «🔑 Получить мой ключ»).\n"
             "3. Откройте приложение ➔ выберите «Добавить ключ из буфера обмена».\n"
             "4. Нажмите «Подключить»!\n\n"

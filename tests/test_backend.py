@@ -56,7 +56,7 @@ async def test_tickets_flow():
             "subcategory": "оператор",
             "device": "Android",
             "operator": "МТС",
-            "app": "Amnezia",
+            "app": "Incy",
             "problem": "Не подключается к серверу NL-03",
             "cause": "Блокировка сигнатуры протокола",
             "result": "решено сменой протокола на Vless",
@@ -132,7 +132,7 @@ async def test_simulate_channel_webhook():
             "channel": "telegram",
             "user_id": "991823",
             "user_name": "Павел Тестовый",
-            "message_text": "У меня на iPhone перестал работать интернет через Amnezia VPN на МТС"
+            "message_text": "У меня на iPhone перестал работать интернет через Incy на МТС"
         })
         assert tg_res.status_code == 200
         assert tg_res.json()["status"] == "success"

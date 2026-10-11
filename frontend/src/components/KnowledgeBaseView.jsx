@@ -12,7 +12,7 @@ export default function KnowledgeBaseView({ user }) {
     category: 'Не умеет подключить',
     subcategory: 'инструкция',
     device: 'iPhone',
-    app: 'Amnezia',
+    app: 'Incy',
     content: '',
     short_answer: ''
   });
@@ -38,7 +38,7 @@ export default function KnowledgeBaseView({ user }) {
     try {
       await api.knowledge.create(form);
       setShowCreateModal(false);
-      setForm({ title: '', category: 'Не умеет подключить', subcategory: 'инструкция', device: 'iPhone', app: 'Amnezia', content: '', short_answer: '' });
+      setForm({ title: '', category: 'Не умеет подключить', subcategory: 'инструкция', device: 'iPhone', app: 'Incy', content: '', short_answer: '' });
       await loadArticles();
     } catch (err) {
       console.error('Failed to create article:', err);

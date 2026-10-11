@@ -31,7 +31,7 @@ export default function SystemSettingsView({ user }) {
   const [simChannel, setSimChannel] = useState('telegram');
   const [simUserId, setSimUserId] = useState('994821');
   const [simUserName, setSimUserName] = useState('Константин Тестов');
-  const [simText, setSimText] = useState('Здравствуйте! Amnezia VPN не подключается на Android через оператор МТС');
+  const [simText, setSimText] = useState('Здравствуйте! Incy не подключается на Android через оператор МТС');
   const [simStatus, setSimStatus] = useState('');
 
   // New User state

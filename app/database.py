@@ -60,7 +60,7 @@ async def init_db():
             user_id TEXT,             -- field 1: client id in VPN
             device TEXT,              -- field 2: iPhone, Android, etc.
             operator TEXT,            -- field 3: МТС, Мегафон, etc.
-            app TEXT,                 -- field 4: Amnezia, Outline, etc.
+            app TEXT,                 -- field 4: Incy, Outline, etc.
             problem TEXT,             -- field 5: symptom/problem
             cause TEXT,               -- field 6: root cause
             result TEXT,              -- field 7: resolution outcome
