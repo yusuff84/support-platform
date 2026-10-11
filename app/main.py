@@ -18,6 +18,8 @@ from app.api.knowledge import router as knowledge_router
 from app.api.ai import router as ai_router
 from app.api.webhooks import router as webhooks_router
 from app.api.settings import router as settings_router
+from app.api.media import router as media_router
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -90,6 +92,7 @@ app.include_router(knowledge_router)
 app.include_router(ai_router)
 app.include_router(webhooks_router)
 app.include_router(settings_router)
+app.include_router(media_router)
 
 @app.get("/health")
 async def health_check():

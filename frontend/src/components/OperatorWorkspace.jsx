@@ -791,9 +791,9 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                 {messages.map((m) => {
                   const isClient = m.sender_type === 'client';
                   const isAI = m.sender_type === 'ai';
-                  const hasPhoto = m.media_type === 'photo' || (m.media_url && m.media_url.match(/\.(jpg|jpeg|png|webp|gif)$/i));
-                  const hasVideo = m.media_type === 'video' || (m.media_url && m.media_url.match(/\.(mp4|webm|mov)$/i));
-                  const hasVoice = m.media_type === 'voice' || m.media_type === 'audio' || (m.media_url && m.media_url.match(/\.(webm|mp3|ogg|wav)$/i));
+                  const hasPhoto = m.media_type === 'photo' || (m.media_url && (m.media_url.match(/\.(jpg|jpeg|png|webp|gif)$/i) || m.media_url.includes('kind=photo')));
+                  const hasVideo = m.media_type === 'video' || (m.media_url && (m.media_url.match(/\.(mp4|webm|mov)$/i) || m.media_url.includes('kind=video')));
+                  const hasVoice = m.media_type === 'voice' || m.media_type === 'audio' || (m.media_url && (m.media_url.match(/\.(webm|mp3|ogg|wav)$/i) || m.media_url.includes('kind=voice') || m.media_url.includes('kind=audio')));
                   const hasDoc = m.media_type === 'document';
 
                   return (
@@ -864,7 +864,9 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                         )}
 
                         {/* Message text */}
-                        <div>{m.message_text}</div>
+                        {m.message_text && m.message_text !== '[photo]' && m.message_text !== '[voice]' && m.message_text !== '[audio]' && m.message_text !== '[video]' && (
+                          <div>{m.message_text}</div>
+                        )}
                       </div>
                     </div>
                   );

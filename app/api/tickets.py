@@ -72,7 +72,7 @@ async def get_taxonomy(current_user: dict = Depends(get_current_user)):
         "devices": DEVICES_LIST,
         "operators": OPERATORS_LIST,
         "apps": APPS_LIST,
-        "protocols": ["Vless", "ShadowSocks", "Trojan", "WireGuard", "Другой"],
+        "protocols": ["Vless", "ShadowSocks", "Amnezia WG", "Trojan", "WireGuard", "Другой"],
         "servers": ["NL-01", "NL-02", "NL-03", "DE-01", "DE-02", "FI-01", "SE-01", "US-01"]
     }
 
@@ -245,6 +245,24 @@ async def update_ticket_passport(
 
     return await get_ticket(ticket_id, current_user, db)
 
+def _format_media_url(url: Optional[str], mtype: Optional[str]) -> Optional[str]:
+    if not url:
+        return None
+    if url.startswith("http://") or url.startswith("https://") or url.startswith("/uploads/") or url.startswith("/api/media"):
+        return url
+    clean_type = (mtype or "").lower().replace("contenttype.", "").strip()
+    return f"/api/media?file_id={url}&kind={clean_type}"
+
+
+def _normalize_media_type(mtype: Optional[str]) -> Optional[str]:
+    if not mtype:
+        return None
+    mt = mtype.lower().replace("contenttype.", "").strip()
+    if mt in ("photo", "voice", "audio", "video", "document"):
+        return mt
+    return mt
+
+
 @router.get("/{ticket_id}/messages", response_model=List[MessageOut])
 async def get_ticket_messages(
     ticket_id: int,
@@ -264,8 +282,8 @@ async def get_ticket_messages(
                 sender_name=r["sender_name"],
                 sender_id=str(r["sender_id"]) if r["sender_id"] else None,
                 message_text=r["message_text"],
-                media_type=r["media_type"],
-                media_url=r["media_url"],
+                media_type=_normalize_media_type(r["media_type"]),
+                media_url=_format_media_url(r["media_url"], r["media_type"]),
                 created_at=str(r["created_at"])
             )
             for r in rows
@@ -455,7 +473,7 @@ async def send_guide(
     guides = {
         "iPhone": (
             "📱 Инструкция по подключению на iPhone / iOS:\n\n"
-            "1. Установите приложение Incy или Happ из App Store.\n"
+            "1. Установите приложение Amnezia VPN или Happ из App Store.\n"
             "2. Скопируйте ваш ключ доступа (начинается с vless:// или vpn://).\n"
             "3. Откройте приложение, нажмите «Добавить конфигурацию» ➔ «Из буфера обмена».\n"
             "4. Нажмите большую кнопку «Подключить» и разрешите добавление VPN-конфигурации.\n\n"
@@ -463,7 +481,7 @@ async def send_guide(
         ),
         "Android": (
             "🤖 Инструкция по подключению на Android:\n\n"
-            "1. Установите Incy или v2rayNG из Google Play.\n"
+            "1. Установите v2rayNG или Amnezia VPN из Google Play.\n"
             "2. Скопируйте ваш ключ доступа.\n"
             "3. В приложении нажмите «+» (вверху справа) ➔ «Импорт из буфера обмена».\n"
             "4. Нажмите на круглую кнопку подключения внизу экрана.\n\n"
@@ -471,7 +489,7 @@ async def send_guide(
         ),
         "Windows": (
             "💻 Инструкция по подключению на Windows:\n\n"
-            "1. Скачайте Happ Desktop или V2RayTun для Windows.\n"
+            "1. Скачайте Amnezia VPN или v2rayN для Windows.\n"
             "2. Запустите приложение от имени администратора.\n"
             "3. Вставьте ваш ключ доступа и нажмите «Подключиться»."
         )
@@ -607,14 +625,14 @@ async def send_ai_setup_guide(
         guide_text = (
             f"🛠 Помощник по настройке TOPBOX VPN ({triage_res.device or 'ваше устройство'}):\n\n"
             "1. Перейдите в нашего официального Telegram-бота для получения и привязки вашего ключа: https://t.me/topvpnhelp_bot (нажмите /start).\n"
-            f"2. {triage_res.setup_guide or 'Скопируйте ключ и вставьте в приложение Incy или Happ.'}\n\n"
+            f"2. {triage_res.setup_guide or 'Скопируйте ключ и вставьте в приложение Amnezia VPN или Happ.'}\n\n"
             f"Диагноз системы: {triage_res.diagnostic_summary}\n"
             "Если после выполнения этих шагов останутся вопросы — напишите сюда, оператор на связи!"
         )
     else:
         guide_text = (
             f"🛠 Помощник по настройке TOPBOX VPN ({triage_res.device or 'ваше устройство'}):\n\n"
-            f"{triage_res.setup_guide or '1. Скопируйте ключ.\n2. Вставьте в приложение Incy / Happ.\n3. Нажмите Подключить.'}\n\n"
+            f"{triage_res.setup_guide or '1. Скопируйте ключ.\n2. Вставьте в приложение Amnezia / Happ.\n3. Нажмите Подключить.'}\n\n"
             f"Диагноз системы: {triage_res.diagnostic_summary}\n"
             f"Если после выполнения этих шагов соединение не установилось — напишите нам, и оператор сразу подключится!"
         )

@@ -29,6 +29,7 @@ services:
       - WORK_HOURS_END_MSK=20
     volumes:
       - support_data:/app/data
+      - /opt/support-bot/data/media_cache:/app/data/media_cache
     depends_on:
       - support-redis
 
