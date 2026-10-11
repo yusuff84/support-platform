@@ -200,10 +200,59 @@ npm run dev   # для локальной разработки с HMR на по�
 
 ## 🧪 Запуск тестов
 
-Тестовый набор проверяет все ключевые узлы системы: аутентификацию, ролевую модель, расчет метрик 40 000 базы, top-10 проблем, drill-down аномалии, AI-триаж, генерацию отчетов, вебхуки и управление ключами.
+Тестовый набор проверяет все ключевые узлы системы: аутентификацию, ролевую модель, расчет метрик 40 000 базы, top-10 проблем, drill-down аномалии, AI-триаж и автонастройку, генерацию отчетов, вебхуки, управление ключами и строгие ограничения для каналов Telegram / Instagram.
 
 ```bash
 source .venv/bin/activate
 PYTHONPATH=. pytest -v tests/test_backend.py
 ```
-Результат: **9 passed (100% success)**.
+Результат: **11 passed (100% success)**.
+
+---
+
+## 🖥️ Развертывание на сервере из GitHub и работа с пушами
+
+### Шаг 1. Генерация SSH-ключа на сервере (для безопасного pull и push без ввода пароля)
+Подключитесь к вашему VPS-серверу по SSH:
+```bash
+# На сервере генерируем ED25519 ключ:
+ssh-keygen -t ed25519 -C "server@support-platform"
+
+# Выводим публичный ключ:
+cat ~/.ssh/id_ed25519.pub
+```
+1. Скопируйте полученную строку.
+2. В GitHub перейдите в **Settings ➔ SSH and GPG keys ➔ New SSH key** (или в настройки репозитория: **Settings ➔ Deploy keys ➔ Add deploy key** с галочкой *Allow write access*).
+
+### Шаг 2. Клонирование репозитория на сервер
+```bash
+git clone git@github.com:yusuff84/support-platform.git /opt/support-platform
+cd /opt/support-platform
+```
+
+### Шаг 3. Настройка окружения и запуск
+```bash
+# 1. Создайте файл конфигурации:
+cp .env.example .env
+
+# 2. Заполните боевые переменные (токен Telegram бота, OpenRouter, база VPN):
+nano .env
+
+# 3. Запустите стек в 1 команду через готовый скрипт:
+./deploy.sh
+# или через Docker Compose напрямую:
+docker compose up -d --build
+```
+
+### Шаг 4. Настройка Git на сервере для отправки изменений (Git Push)
+Чтобы коммитить и пушить правки прямо с сервера обратно в GitHub:
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "your-email@example.com"
+
+# Проверка и пуш:
+git add .
+git commit -m "fix: server configuration update"
+git push origin main
+```
+

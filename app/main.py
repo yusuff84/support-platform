@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,14 +22,43 @@ from app.api.settings import router as settings_router
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+bot_instance = None
+bot_polling_task = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global bot_instance, bot_polling_task
     logger.info("Initializing TOPBOX SUPPORT OS database and seed data...")
     await init_db()
     await seed_data()
+
+    # Automatic background Telegram Bot polling if token configured
+    if settings.TELEGRAM_BOT_TOKEN:
+        try:
+            from aiogram import Bot
+            from app.channels.telegram_bot import setup_bot_dispatcher
+            bot_instance = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+            dp = setup_bot_dispatcher()
+            bot_polling_task = asyncio.create_task(dp.start_polling(bot_instance))
+            logger.info("Telegram Bot polling started successfully in background.")
+        except Exception as e:
+            logger.warning(f"Could not start Telegram Bot polling: {e}")
+
     logger.info("Application startup completed.")
     yield
-    logger.info("Application shutting down.")
+    logger.info("Application shutting down...")
+    if bot_polling_task:
+        bot_polling_task.cancel()
+        try:
+            await bot_polling_task
+        except (asyncio.CancelledError, Exception):
+            pass
+    if bot_instance:
+        try:
+            await bot_instance.session.close()
+        except Exception:
+            pass
+    logger.info("Application shutdown finished.")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
