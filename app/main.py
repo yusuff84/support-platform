@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     await seed_data()
 
     # Automatic background Telegram Bot polling if token configured
-    if settings.TELEGRAM_BOT_TOKEN:
+    if settings.TELEGRAM_BOT_TOKEN and os.getenv("TELEGRAM_POLLING", "false").lower() == "true":
         try:
             from aiogram import Bot
             from app.channels.telegram_bot import setup_bot_dispatcher
