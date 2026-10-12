@@ -64,3 +64,40 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
 }
+
+/* Telegram Formatted Message Styling */
+.telegram-text-content b,
+.telegram-text-content strong {
+  font-weight: 700;
+}
+.telegram-text-content i,
+.telegram-text-content em {
+  font-style: italic;
+}
+.telegram-text-content a {
+  color: #6366f1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.telegram-text-content a:hover {
+  color: #4f46e5;
+}
+.dark .telegram-text-content a {
+  color: #818cf8;
+}
+.dark .telegram-text-content a:hover {
+  color: #a5b4fc;
+}
+.telegram-text-content code {
+  font-family: JetBrains Mono, monospace;
+  background-color: rgba(120, 120, 120, 0.18);
+  padding: 0.12em 0.35em;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+}
+.telegram-text-content blockquote {
+  border-left: 3px solid rgba(120, 120, 120, 0.4);
+  padding-left: 0.5rem;
+  margin: 0.35rem 0;
+  opacity: 0.9;
+}

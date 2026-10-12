@@ -109,6 +109,27 @@ const getQuickReplies = (channel) => {
   return categories;
 };
 
+
+// Clean & render Telegram HTML markup safely
+const renderFormattedTelegramText = (rawText) => {
+  if (!rawText) return null;
+  // Strip leading media markers like [photo], [voice], [audio], [video], [document]
+  const cleaned = rawText.replace(/^\[(photo|voice|audio|video|document)\]\s*/i, "").trim();
+  if (!cleaned) return null;
+
+  // Remove dangerous script/event tags while preserving <b>, <i>, <code>, <a>, <blockquote>
+  const safeHtml = cleaned
+    .replace(/<script[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/on\w+="[^"]*"/gi, "");
+
+  return (
+    <div
+      className="telegram-text-content break-words leading-relaxed whitespace-pre-wrap"
+      dangerouslySetInnerHTML={{ __html: safeHtml }}
+    />
+  );
+};
+
 export default function OperatorWorkspace({ user, onMobileChatChange }) {
   const [tickets, setTickets] = useState([]);
   const [selectedTicketId, setSelectedTicketId] = useState(null);
@@ -819,15 +840,23 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                       >
                         {/* 1. Photo render */}
                         {hasPhoto && m.media_url && (
-                          <div className="rounded-lg overflow-hidden border border-zinc-250 dark:border-zinc-750 cursor-pointer" onClick={() => setZoomedImage(m.media_url)}>
-                            <img src={m.media_url} alt="Photo" className="max-h-56 w-auto object-cover rounded-lg hover:opacity-95 transition-opacity" />
+                          <div
+                            className="w-fit max-w-full rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-black/5 dark:bg-black/30 cursor-pointer shadow-xs hover:opacity-95 transition-opacity"
+                            onClick={() => setZoomedImage(m.media_url)}
+                          >
+                            <img
+                              src={m.media_url}
+                              alt="Photo"
+                              className="max-h-72 sm:max-h-80 w-auto max-w-full object-contain block rounded-lg"
+                              loading="lazy"
+                            />
                           </div>
                         )}
 
                         {/* 2. Video render */}
                         {hasVideo && m.media_url && (
-                          <div className="rounded-lg overflow-hidden border border-zinc-250 dark:border-zinc-750">
-                            <video src={m.media_url} controls className="max-h-56 w-full rounded-lg" />
+                          <div className="w-fit max-w-full rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-xs">
+                            <video src={m.media_url} controls className="max-h-72 sm:max-h-80 w-auto max-w-full rounded-lg block" />
                           </div>
                         )}
 
@@ -864,9 +893,7 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                         )}
 
                         {/* Message text */}
-                        {m.message_text && m.message_text !== '[photo]' && m.message_text !== '[voice]' && m.message_text !== '[audio]' && m.message_text !== '[video]' && (
-                          <div>{m.message_text}</div>
-                        )}
+                        {renderFormattedTelegramText(m.message_text)}
                       </div>
                     </div>
                   );
