@@ -90,7 +90,9 @@ export const api = {
     resolve: (id) => request(`/tickets/${id}/resolve`, { method: 'POST' }),
     escalate: (id) => request(`/tickets/${id}/escalate`, { method: 'POST' }),
     getVpnKeys: (id) => request(`/tickets/${id}/vpn-keys`),
-    getTaxonomy: () => request('/tickets/taxonomy')
+    getTaxonomy: () => request('/tickets/taxonomy'),
+    getRefundablePayments: (id) => request('/tickets/' + id + '/refundable-payments'),
+    processRefund: (id, data) => request('/tickets/' + id + '/refund', { method: 'POST', body: JSON.stringify(data) })
   },
   analytics: {
     healthOverview: (days = 7) => request(`/analytics/health-overview?days=${days}`),

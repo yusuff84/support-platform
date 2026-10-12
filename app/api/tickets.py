@@ -14,7 +14,8 @@ from app.models import (
     TicketPassportUpdate,
     MessageCreate,
     MessageOut,
-    RecreateKeyRequest
+    RecreateKeyRequest,
+    TicketRefundRequest
 )
 from app.config import CATEGORIES_TAXONOMY, DEVICES_LIST, OPERATORS_LIST, APPS_LIST
 
@@ -441,6 +442,84 @@ async def recreate_user_key(
 
     msg = MessageCreate(ticket_id=ticket_id, message_text=result_text, sender_type="operator")
     return await send_ticket_message(ticket_id, msg, current_user, db)
+
+@router.get("/{ticket_id}/refundable-payments")
+async def get_ticket_refundable_payments(
+    ticket_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    """Fetches user refundable payments from main VPN database with pro-rata calculation."""
+    async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
+        ticket = await cursor.fetchone()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    channel_user_id = str(ticket["channel_user_id"] or "").strip()
+    if not channel_user_id.isdigit():
+        return {"success": True, "tg_id": channel_user_id, "payments": []}
+
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            res = await client.get(f"http://host.docker.internal:3001/support-api/payments/refundable/{channel_user_id}")
+            if res.status_code == 200:
+                return res.json()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Error querying refundable payments: {e}")
+
+    return {"success": True, "tg_id": channel_user_id, "payments": []}
+
+@router.post("/{ticket_id}/refund")
+async def execute_ticket_refund(
+    ticket_id: int,
+    req: TicketRefundRequest,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    """Executes full or partial refund for the client's payment."""
+    async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
+        ticket = await cursor.fetchone()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    channel_user_id = str(ticket["channel_user_id"] or "").strip()
+    payload = {
+        "payment_id": req.payment_id,
+        "amount": req.amount,
+        "refund_type": req.refund_type,
+        "key_action": req.key_action,
+        "admin_tg_id": current_user.get("id"),
+        "reason": req.reason or f"Возврат по тикету #{ticket['ticket_number']}"
+    }
+
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=25.0) as client:
+            res = await client.post("http://host.docker.internal:3001/support-api/payments/refund", json=payload)
+            data = res.json()
+            if not data.get("success"):
+                raise HTTPException(status_code=400, detail=data.get("error", "Ошибка выполнения возврата"))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка соединения с сервисом возвратов: {e}")
+
+    dest_str = "банковскую карту / СБП" if req.refund_type == "yookassa" else "баланс в боте"
+    audit_text = (
+        f"🧾 <b>Оформлен возврат средств</b>: <b>{req.amount} ₽</b> на {dest_str}.\n\n"
+        f"• Платёж: #{req.payment_id}\n"
+        f"• Результат: {data.get('message', 'Выполнено')}\n"
+    )
+    if req.reason:
+        audit_text += f"• Причина: <i>{req.reason}</i>"
+
+    # Save message in ticket history
+    msg = MessageCreate(ticket_id=ticket_id, message_text=audit_text, sender_type="operator")
+    await send_ticket_message(ticket_id, msg, current_user, db)
+
+    return data
 
 @router.post("/{ticket_id}/send-tg-link")
 async def send_tg_bot_link_endpoint(

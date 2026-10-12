@@ -270,3 +270,10 @@ class AiSuggestionResult(BaseModel):
     suggested_action: Optional[str] = None # e.g. "send_key", "send_ios_guide", "escalate"
     model_used: str
     confidence: float
+
+class TicketRefundRequest(BaseModel):
+    payment_id: int
+    amount: float
+    refund_type: str = "yookassa"
+    key_action: str = "revoke"
+    reason: Optional[str] = "Возврат через Support Platform"

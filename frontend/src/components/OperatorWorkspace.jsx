@@ -24,7 +24,8 @@ import {
   Download,
   X,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  CreditCard
 } from 'lucide-react';
 import { TelegramIcon, InstagramIcon, ChannelBadge } from './Icons';
 import { api } from '../api';
@@ -188,6 +189,19 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [actionNotice, setActionNotice] = useState('');
+
+  // Refund Modal State
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [refundablePayments, setRefundablePayments] = useState([]);
+  const [loadingRefundPayments, setLoadingRefundPayments] = useState(false);
+  const [selectedRefundPayment, setSelectedRefundPayment] = useState(null);
+  const [refundAmountType, setRefundAmountType] = useState('full'); // 'full' | 'prorata' | 'custom'
+  const [customRefundAmount, setCustomRefundAmount] = useState('');
+  const [refundDestination, setRefundDestination] = useState('yookassa'); // 'yookassa' | 'balance'
+  const [refundKeyAction, setRefundKeyAction] = useState('revoke'); // 'revoke' | 'reduce' | 'keep'
+  const [refundReason, setRefundReason] = useState('');
+  const [submittingRefund, setSubmittingRefund] = useState(false);
+  const [refundError, setRefundError] = useState('');
 
   // Notify parent App when mobile view is in chat/passport
   useEffect(() => {
@@ -505,6 +519,66 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
     await loadTickets();
     setActionNotice('Ссылка на Telegram-бота отправлена клиенту!');
     setTimeout(() => setActionNotice(''), 3000);
+  };
+
+  const handleOpenRefundModal = async () => {
+    if (!selectedTicketId) return;
+    setRefundModalOpen(true);
+    setLoadingRefundPayments(true);
+    setSelectedRefundPayment(null);
+    setRefundError('');
+    try {
+      const data = await api.tickets.getRefundablePayments(selectedTicketId);
+      const list = data.payments || [];
+      setRefundablePayments(list);
+      if (list.length > 0) {
+        setSelectedRefundPayment(list[0]);
+        setRefundAmountType('full');
+        setCustomRefundAmount(String(list[0].pro_rata?.max_refundable || list[0].amount));
+        setRefundDestination((list[0].payment_system || '').toUpperCase() === 'YOOKASSA' ? 'yookassa' : 'balance');
+      }
+    } catch (err) {
+      setRefundError(err.message || 'Ошибка загрузки доступных платежей');
+    } finally {
+      setLoadingRefundPayments(false);
+    }
+  };
+
+  const handleExecuteRefund = async () => {
+    if (!selectedRefundPayment || !selectedTicketId) return;
+    setSubmittingRefund(true);
+    setRefundError('');
+
+    let amount = selectedRefundPayment.pro_rata?.max_refundable || selectedRefundPayment.amount;
+    if (refundAmountType === 'prorata') {
+      amount = selectedRefundPayment.pro_rata?.pro_rata_amount || amount;
+    } else if (refundAmountType === 'custom') {
+      amount = parseFloat(customRefundAmount);
+      if (isNaN(amount) || amount <= 0) {
+        setRefundError('Введите корректную сумму возврата');
+        setSubmittingRefund(false);
+        return;
+      }
+    }
+
+    try {
+      await api.tickets.processRefund(selectedTicketId, {
+        payment_id: selectedRefundPayment.id,
+        amount: amount,
+        refund_type: refundDestination,
+        key_action: refundKeyAction,
+        reason: refundReason || 'Возврат по обращению в саппорт'
+      });
+      setActionNotice(`✅ Возврат ${amount} ₽ успешно выполнен!`);
+      setTimeout(() => setActionNotice(''), 6000);
+      setRefundModalOpen(false);
+      await loadTicketDetails(selectedTicketId);
+      await loadTickets();
+    } catch (err) {
+      setRefundError(err.message || 'Ошибка проведения возврата');
+    } finally {
+      setSubmittingRefund(false);
+    }
   };
 
   const handleCopyKeyString = (str) => {
@@ -1398,6 +1472,28 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                   )}
                 </div>
               )}
+
+              {/* Financial & Refund Card */}
+              {selectedTicket.channel === 'telegram' && (
+                <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between text-xs font-bold text-zinc-900 dark:text-zinc-200">
+                    <span className="flex items-center space-x-1.5">
+                      <CreditCard className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Платежи и Возвраты</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleOpenRefundModal}
+                      className="px-2 py-1 rounded-md bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-950 text-[11px] font-semibold transition-colors shadow-xs flex items-center space-x-1"
+                    >
+                      <span>💸 Оформить возврат</span>
+                    </button>
+                  </div>
+                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+                    Полный или частичный возврат через ЮKassa API или на баланс бота.
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center text-zinc-400 text-xs py-8 font-mono">
@@ -1465,6 +1561,244 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REFUND MODAL */}
+      {refundModalOpen && (
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-xs">
+            {/* Header */}
+            <div className="p-3.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950 shrink-0">
+              <div className="flex items-center space-x-2">
+                <CreditCard className="w-4 h-4 text-emerald-500" />
+                <h3 className="font-bold text-xs uppercase tracking-wider text-zinc-900 dark:text-white font-mono">
+                  Оформление возврата средств
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRefundModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 overflow-y-auto space-y-4">
+              {refundError && (
+                <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/70 border border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-300 font-medium">
+                  {refundError}
+                </div>
+              )}
+
+              {loadingRefundPayments ? (
+                <div className="py-8 text-center text-zinc-400 font-mono">
+                  Загрузка доступных платежей...
+                </div>
+              ) : refundablePayments.length === 0 ? (
+                <div className="py-8 text-center text-zinc-400 font-mono">
+                  У абонента нет доступных успешных платежей для возврата
+                </div>
+              ) : (
+                <>
+                  {/* Select Payment */}
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-zinc-700 dark:text-zinc-300 font-mono uppercase text-[11px]">
+                      1. Выберите платёж для возврата:
+                    </label>
+                    <select
+                      value={selectedRefundPayment?.id || ''}
+                      onChange={(e) => {
+                        const p = refundablePayments.find(x => x.id === parseInt(e.target.value));
+                        if (p) {
+                          setSelectedRefundPayment(p);
+                          setCustomRefundAmount(String(p.pro_rata?.max_refundable || p.amount));
+                          setRefundDestination((p.payment_system || '').toUpperCase() === 'YOOKASSA' ? 'yookassa' : 'balance');
+                        }
+                      }}
+                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2 font-mono text-xs focus:outline-none"
+                    >
+                      {refundablePayments.map(p => (
+                        <option key={p.id} value={p.id}>
+                          #{p.id} • {p.amount} ₽ ({p.payment_system}) от {p.created_at}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedRefundPayment && (
+                    <>
+                      {/* Pro-rata details box */}
+                      <div className="bg-zinc-50 dark:bg-zinc-950 p-3 rounded-xl border border-zinc-200 dark:border-zinc-850 space-y-1 font-mono text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">Тариф:</span>
+                          <span className="font-bold text-zinc-900 dark:text-white">{selectedRefundPayment.pro_rata?.tariff_name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">Срок использования:</span>
+                          <span>{selectedRefundPayment.pro_rata?.elapsed_days} из {selectedRefundPayment.pro_rata?.duration_days} дн. (осталось {selectedRefundPayment.pro_rata?.remaining_days} дн.)</span>
+                        </div>
+                        <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-800 pt-1 mt-1">
+                          <span className="text-zinc-500">Расчёт по остатку (Pro-rata):</span>
+                          <span className="font-bold text-amber-500">{selectedRefundPayment.pro_rata?.pro_rata_amount} ₽</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">Максимум к возврату:</span>
+                          <span className="font-bold text-emerald-500">{selectedRefundPayment.pro_rata?.max_refundable} ₽</span>
+                        </div>
+                      </div>
+
+                      {/* 2. Amount choice */}
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-zinc-700 dark:text-zinc-300 font-mono uppercase text-[11px]">
+                          2. Сумма к возврату:
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setRefundAmountType('full')}
+                            className={`p-2 rounded-lg border text-center transition-colors font-mono ${
+                              refundAmountType === 'full'
+                                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold border-zinc-900 dark:border-white'
+                                : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                            }`}
+                          >
+                            <div>Полный</div>
+                            <div className="text-[10px] opacity-80">{selectedRefundPayment.pro_rata?.max_refundable} ₽</div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setRefundAmountType('prorata')}
+                            className={`p-2 rounded-lg border text-center transition-colors font-mono ${
+                              refundAmountType === 'prorata'
+                                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold border-zinc-900 dark:border-white'
+                                : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                            }`}
+                          >
+                            <div>По остатку</div>
+                            <div className="text-[10px] opacity-80">{selectedRefundPayment.pro_rata?.pro_rata_amount} ₽</div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setRefundAmountType('custom')}
+                            className={`p-2 rounded-lg border text-center transition-colors font-mono ${
+                              refundAmountType === 'custom'
+                                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold border-zinc-900 dark:border-white'
+                                : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                            }`}
+                          >
+                            <div>Своя сумма</div>
+                            <div className="text-[10px] opacity-80">Вручную</div>
+                          </button>
+                        </div>
+
+                        {refundAmountType === 'custom' && (
+                          <div className="pt-1">
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="Сумма в рублях..."
+                              value={customRefundAmount}
+                              onChange={(e) => setCustomRefundAmount(e.target.value)}
+                              className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2 font-mono text-xs focus:outline-none"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 3. Destination */}
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-zinc-700 dark:text-zinc-300 font-mono uppercase text-[11px]">
+                          3. Куда зачислить средства:
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(selectedRefundPayment.payment_system || '').toUpperCase() === 'YOOKASSA' && (
+                            <button
+                              type="button"
+                              onClick={() => setRefundDestination('yookassa')}
+                              className={`p-2 rounded-lg border text-left transition-colors ${
+                                refundDestination === 'yookassa'
+                                  ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold border-zinc-900 dark:border-white'
+                                  : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                              }`}
+                            >
+                              <div className="font-bold">На карту (ЮKassa)</div>
+                              <div className="text-[10px] opacity-80 font-mono">Через API эквайринга</div>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setRefundDestination('balance')}
+                            className={`p-2 rounded-lg border text-left transition-colors ${
+                              refundDestination === 'balance'
+                                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold border-zinc-900 dark:border-white'
+                                : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                            }`}
+                          >
+                            <div className="font-bold">На баланс в боте</div>
+                            <div className="text-[10px] opacity-80 font-mono">Мгновенно на счет</div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 4. Key action */}
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-zinc-700 dark:text-zinc-300 font-mono uppercase text-[11px]">
+                          4. Действие с VPN-ключом:
+                        </label>
+                        <select
+                          value={refundKeyAction}
+                          onChange={(e) => setRefundKeyAction(e.target.value)}
+                          className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2 font-mono text-xs focus:outline-none"
+                        >
+                          <option value="revoke">❌ Аннулировать и удалить ключ с сервера</option>
+                          <option value="reduce">⏳ Сократить срок ключа пропорционально</option>
+                          <option value="keep">✅ Оставить ключ активным (компенсация за сбой)</option>
+                        </select>
+                      </div>
+
+                      {/* Reason */}
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-zinc-700 dark:text-zinc-300 font-mono uppercase text-[11px]">
+                          Причина / комментарий оператора:
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Например: Не подошёл протокол / компенсация за сбой связи"
+                          value={refundReason}
+                          onChange={(e) => setRefundReason(e.target.value)}
+                          className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2 text-xs focus:outline-none"
+                        />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-end space-x-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setRefundModalOpen(false)}
+                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                disabled={submittingRefund || !selectedRefundPayment}
+                onClick={handleExecuteRefund}
+                className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors shadow-xs disabled:opacity-50"
+              >
+                {submittingRefund ? 'Проведение...' : 'Подтвердить возврат'}
+              </button>
             </div>
           </div>
         </div>
