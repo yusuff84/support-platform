@@ -198,6 +198,19 @@ async def init_db():
         );
         """)
 
+        # Quick Reply Templates (Operator Chat fast responses)
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS quick_reply_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category TEXT NOT NULL,
+            title TEXT NOT NULL,
+            text TEXT NOT NULL,
+            channel TEXT DEFAULT 'all',
+            sort_order INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+
         # Audit Logs
         await db.execute("""
         CREATE TABLE IF NOT EXISTS audit_logs (

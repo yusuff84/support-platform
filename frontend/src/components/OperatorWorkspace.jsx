@@ -1,3 +1,23 @@
+
+// Audio chime synthesizer via Web Audio API (no external mp3 needed)
+const playChime = () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  } catch (e) {
+    console.debug('Audio chime error:', e);
+  }
+};
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, 
@@ -26,7 +46,7 @@ import {
   ChevronRight,
   ChevronDown,
   CreditCard
-} from 'lucide-react';
+, Plus, Trash2, Edit2, Volume2, VolumeX } from 'lucide-react';
 import { TelegramIcon, InstagramIcon, ChannelBadge } from './Icons';
 import { api } from '../api';
 
@@ -159,6 +179,13 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
 
   // Quick Replies drawer / modal
   const [quickRepliesOpen, setQuickRepliesOpen] = useState(false);
+  const [dbTemplates, setDbTemplates] = useState([]);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [templateForm, setTemplateForm] = useState({ category: '', title: '', text: '', channel: 'all' });
+  const [isAddingTemplate, setIsAddingTemplate] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const prevMsgCountRef = useRef(0);
+  const prevTicketsCountRef = useRef(0);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -278,6 +305,72 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
     setSelectedTicketId(tId);
     setMobileView('chat');
   };
+
+
+  // Load dynamic templates from backend
+  const loadTemplates = async () => {
+    try {
+      if (api.tickets.getTemplates) {
+        const list = await api.tickets.getTemplates('all');
+        if (Array.isArray(list) && list.length > 0) {
+          setDbTemplates(list);
+        }
+      }
+    } catch (err) {
+      console.debug('Failed to load DB templates:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+
+  // Smart real-time polling for new client messages & tickets
+  useEffect(() => {
+    const msgInterval = setInterval(async () => {
+      if (!selectedTicketId || sendingMsg) return;
+      try {
+        const latestMsgs = await api.tickets.getMessages(selectedTicketId);
+        if (latestMsgs && latestMsgs.length > 0) {
+          if (prevMsgCountRef.current > 0 && latestMsgs.length > prevMsgCountRef.current) {
+            const newest = latestMsgs[latestMsgs.length - 1];
+            if (newest.sender_type === 'client') {
+              if (soundEnabled) playChime();
+            }
+          }
+          prevMsgCountRef.current = latestMsgs.length;
+          setMessages(latestMsgs);
+        }
+      } catch (e) {
+        // quiet poll
+      }
+    }, 2500);
+
+    const ticketInterval = setInterval(async () => {
+      try {
+        const data = await api.tickets.list({
+          channel: channelFilter || undefined,
+          status: statusFilter || undefined,
+          search: searchQuery || undefined
+        });
+        if (Array.isArray(data)) {
+          if (prevTicketsCountRef.current > 0 && data.length > prevTicketsCountRef.current) {
+            if (soundEnabled) playChime();
+          }
+          prevTicketsCountRef.current = data.length;
+          setTickets(data);
+        }
+      } catch (e) {
+        // quiet poll
+      }
+    }, 6000);
+
+    return () => {
+      clearInterval(msgInterval);
+      clearInterval(ticketInterval);
+    };
+  }, [selectedTicketId, channelFilter, statusFilter, searchQuery, sendingMsg, soundEnabled]);
 
   const handleSendMessage = async (e) => {
     e?.preventDefault();
@@ -587,6 +680,48 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
     setTimeout(() => setCopiedKey(false), 2000);
   };
 
+
+  const handleSaveTemplate = async (e) => {
+    e?.preventDefault();
+    if (!templateForm.title.trim() || !templateForm.text.trim()) return;
+    try {
+      if (editingTemplate) {
+        await api.tickets.updateTemplate(editingTemplate.id, templateForm);
+      } else {
+        await api.tickets.createTemplate(templateForm);
+      }
+      setIsAddingTemplate(false);
+      setEditingTemplate(null);
+      setTemplateForm({ category: '', title: '', text: '', channel: 'all' });
+      await loadTemplates();
+    } catch (err) {
+      console.error('Failed to save template:', err);
+    }
+  };
+
+  const handleDeleteTemplate = async (id, e) => {
+    e?.stopPropagation();
+    if (!window.confirm('Удалить этот шаблон?')) return;
+    try {
+      await api.tickets.deleteTemplate(id);
+      await loadTemplates();
+    } catch (err) {
+      console.error('Failed to delete template:', err);
+    }
+  };
+
+  const handleStartEditTemplate = (tmpl, e) => {
+    e?.stopPropagation();
+    setEditingTemplate(tmpl);
+    setTemplateForm({
+      category: tmpl.category,
+      title: tmpl.title,
+      text: tmpl.text,
+      channel: tmpl.channel || 'all'
+    });
+    setIsAddingTemplate(true);
+  };
+
   const handleApplyQuickReply = (text, sendImmediately = false) => {
     setQuickRepliesOpen(false);
     if (sendImmediately && selectedTicketId) {
@@ -630,6 +765,22 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
               <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
                 {tickets.length} диалогов
               </span>
+            </div>
+
+            {/* Queue Header controls */}
+            <div className="flex items-center justify-between pb-1">
+              <span className="text-[10px] text-zinc-500 font-mono">Live Sync</span>
+              <button
+                type="button"
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className={`p-1 rounded text-xs flex items-center space-x-1 ${
+                  soundEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400'
+                }`}
+                title={soundEnabled ? 'Звук уведомлений включен' : 'Звук уведомлений выключен'}
+              >
+                {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                <span className="text-[10px]">{soundEnabled ? 'Звук ВКЛ' : 'Звук ВЫКЛ'}</span>
+              </button>
             </div>
 
             {/* Search Box */}
@@ -1118,14 +1269,22 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                       <Zap className="w-4 h-4 text-amber-500" />
                     </button>
 
-                    {/* Text input */}
-                    <input
-                      type="text"
-                      placeholder="Сообщение абоненту..."
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      className="flex-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-3 sm:px-3.5 py-2 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-500 shadow-xs min-w-0"
-                    />
+                    {/* Text input with Ctrl/Cmd+Enter support */}
+                    <div className="flex-1 relative min-w-0">
+                      <textarea
+                        rows={1}
+                        placeholder="Сообщение абоненту... (Ctrl+Enter для отправки)"
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSendMessage(e);
+                          }
+                        }}
+                        className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg px-3 sm:px-3.5 py-2 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-500 shadow-xs resize-none max-h-32 min-h-[38px]"
+                      />
+                    </div>
 
                     {/* Voice record button (🎙️) */}
                     <button
@@ -1523,9 +1682,99 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
               </button>
             </div>
 
+            {/* Top Toolbar in Quick Replies Modal */}
+            <div className="px-3 pt-2 pb-1 border-b border-zinc-150 dark:border-zinc-800 flex items-center justify-between">
+              <span className="text-[11px] text-zinc-500 font-mono">
+                {dbTemplates.length > 0 ? `${dbTemplates.length} шаблонов в базе` : 'Стандартные шаблоны'}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingTemplate(null);
+                  setTemplateForm({ category: 'Общие', title: '', text: '', channel: 'all' });
+                  setIsAddingTemplate(!isAddingTemplate);
+                }}
+                className="px-2 py-1 rounded bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 text-[10px] font-bold flex items-center space-x-1 hover:opacity-90 transition-opacity"
+              >
+                <Plus className="w-3 h-3" />
+                <span>{isAddingTemplate ? 'Отмена' : 'Добавить шаблон'}</span>
+              </button>
+            </div>
+
+            {/* Template Add/Edit Form */}
+            {isAddingTemplate && (
+              <form onSubmit={handleSaveTemplate} className="p-3 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 space-y-2 text-xs">
+                <div className="font-bold text-[11px] text-zinc-800 dark:text-zinc-200 uppercase tracking-wider font-mono">
+                  {editingTemplate ? 'Редактирование шаблона' : 'Новый быстрый шаблон'}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Категория (напр. Оплата)"
+                    value={templateForm.category}
+                    onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                    className="p-1.5 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100"
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Название (напр. Смена локации)"
+                    value={templateForm.title}
+                    onChange={(e) => setTemplateForm({ ...templateForm, title: e.target.value })}
+                    className="p-1.5 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+                <textarea
+                  rows={2}
+                  required
+                  placeholder="Текст сообщения..."
+                  value={templateForm.text}
+                  onChange={(e) => setTemplateForm({ ...templateForm, text: e.target.value })}
+                  className="w-full p-1.5 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 resize-none"
+                />
+                <div className="flex items-center justify-between">
+                  <select
+                    value={templateForm.channel}
+                    onChange={(e) => setTemplateForm({ ...templateForm, channel: e.target.value })}
+                    className="p-1 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-[11px]"
+                  >
+                    <option value="all">Для всех каналов</option>
+                    <option value="telegram">Только Telegram</option>
+                    <option value="instagram">Только Instagram</option>
+                  </select>
+                  <button
+                    type="submit"
+                    className="px-3 py-1 rounded bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 shadow-xs"
+                  >
+                    {editingTemplate ? 'Сохранить изменения' : 'Создать'}
+                  </button>
+                </div>
+              </form>
+            )}
+
             {/* Content List */}
             <div className="p-3 overflow-y-auto space-y-3.5 text-xs">
-              {getQuickReplies(selectedTicket?.channel).map((group, gIdx) => (
+              {(() => {
+                // Combine DB templates with fallback static
+                let displayGroups = [];
+                if (dbTemplates.length > 0) {
+                  const grouped = {};
+                  const isTG = selectedTicket?.channel === 'telegram';
+                  dbTemplates.forEach((t) => {
+                    if (t.channel !== 'all' && t.channel !== selectedTicket?.channel) return;
+                    if (!grouped[t.category]) grouped[t.category] = [];
+                    grouped[t.category].push(t);
+                  });
+                  displayGroups = Object.keys(grouped).map((cat) => ({
+                    category: cat,
+                    items: grouped[cat]
+                  }));
+                } else {
+                  displayGroups = getQuickReplies(selectedTicket?.channel);
+                }
+
+                return displayGroups.map((group, gIdx) => (
                 <div key={gIdx} className="space-y-1.5">
                   <div className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-mono">
                     {group.category}
@@ -1551,6 +1800,24 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                             >
                               Отправить
                             </button>
+                            {item.id && (
+                              <>
+                                <button
+                                  onClick={(e) => handleStartEditTemplate(item, e)}
+                                  className="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                                  title="Редактировать"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={(e) => handleDeleteTemplate(item.id, e)}
+                                  className="p-1 rounded text-zinc-400 hover:text-rose-500"
+                                  title="Удалить"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                         <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-mono leading-relaxed line-clamp-2">
@@ -1560,7 +1827,8 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                     ))}
                   </div>
                 </div>
-              ))}
+              ));
+              })()}
             </div>
           </div>
         </div>

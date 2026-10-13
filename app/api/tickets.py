@@ -8,6 +8,31 @@ import random
 
 from app.database import get_db
 from app.auth import get_current_user, require_agent_or_higher
+from pydantic import BaseModel
+
+class QuickTemplateCreate(BaseModel):
+    category: str
+    title: str
+    text: str
+    channel: Optional[str] = "all"
+    sort_order: Optional[int] = 0
+
+class QuickTemplateUpdate(BaseModel):
+    category: Optional[str] = None
+    title: Optional[str] = None
+    text: Optional[str] = None
+    channel: Optional[str] = None
+    sort_order: Optional[int] = None
+
+class QuickTemplateOut(BaseModel):
+    id: int
+    category: str
+    title: str
+    text: str
+    channel: str
+    sort_order: int
+    created_at: str
+
 from app.models import (
     TicketOut,
     TicketCreate,
@@ -768,6 +793,10 @@ async def upload_attachment(
     await db.execute("UPDATE tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (ticket_id,))
     await db.commit()
 
+    # Route media attachment out to Telegram / Instagram
+    from app.channels.dispatcher import dispatch_outgoing_message
+    await dispatch_outgoing_message(ticket, msg_text, media_path=filepath, media_type=media_type)
+
     return MessageOut(
         id=msg_id,
         ticket_id=ticket_id,
@@ -782,3 +811,105 @@ async def upload_attachment(
 
 
 
+
+
+# ==============================================================
+# QUICK REPLY TEMPLATES MANAGEMENT API
+# ==============================================================
+
+@router.get("/templates", response_model=List[QuickTemplateOut])
+async def list_quick_templates(
+    channel: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    query = "SELECT id, category, title, text, channel, sort_order, created_at FROM quick_reply_templates"
+    params = []
+    if channel and channel != "all":
+        query += " WHERE channel IN ('all', ?)"
+        params.append(channel)
+    query += " ORDER BY category ASC, sort_order ASC, id ASC"
+
+    async with db.execute(query, tuple(params)) as cursor:
+        rows = await cursor.fetchall()
+        return [
+            QuickTemplateOut(
+                id=r[0],
+                category=r[1],
+                title=r[2],
+                text=r[3],
+                channel=r[4],
+                sort_order=r[5],
+                created_at=str(r[6])
+            )
+            for r in rows
+        ]
+
+@router.post("/templates", response_model=QuickTemplateOut)
+async def create_quick_template(
+    t_in: QuickTemplateCreate,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    cursor = await db.execute(
+        "INSERT INTO quick_reply_templates (category, title, text, channel, sort_order) VALUES (?, ?, ?, ?, ?)",
+        (t_in.category, t_in.title, t_in.text, t_in.channel or "all", t_in.sort_order or 0)
+    )
+    t_id = cursor.lastrowid
+    await db.commit()
+
+    async with db.execute("SELECT id, category, title, text, channel, sort_order, created_at FROM quick_reply_templates WHERE id = ?", (t_id,)) as c:
+        r = await c.fetchone()
+        return QuickTemplateOut(
+            id=r[0], category=r[1], title=r[2], text=r[3], channel=r[4], sort_order=r[5], created_at=str(r[6])
+        )
+
+@router.put("/templates/{template_id}", response_model=QuickTemplateOut)
+async def update_quick_template(
+    template_id: int,
+    t_in: QuickTemplateUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    updates = []
+    params = []
+    if t_in.category is not None:
+        updates.append("category = ?")
+        params.append(t_in.category)
+    if t_in.title is not None:
+        updates.append("title = ?")
+        params.append(t_in.title)
+    if t_in.text is not None:
+        updates.append("text = ?")
+        params.append(t_in.text)
+    if t_in.channel is not None:
+        updates.append("channel = ?")
+        params.append(t_in.channel)
+    if t_in.sort_order is not None:
+        updates.append("sort_order = ?")
+        params.append(t_in.sort_order)
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="Нет данных для обновления")
+
+    params.append(template_id)
+    await db.execute(f"UPDATE quick_reply_templates SET {', '.join(updates)} WHERE id = ?", tuple(params))
+    await db.commit()
+
+    async with db.execute("SELECT id, category, title, text, channel, sort_order, created_at FROM quick_reply_templates WHERE id = ?", (template_id,)) as c:
+        r = await c.fetchone()
+        if not r:
+            raise HTTPException(status_code=404, detail="Шаблон не найден")
+        return QuickTemplateOut(
+            id=r[0], category=r[1], title=r[2], text=r[3], channel=r[4], sort_order=r[5], created_at=str(r[6])
+        )
+
+@router.delete("/templates/{template_id}")
+async def delete_quick_template(
+    template_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    await db.execute("DELETE FROM quick_reply_templates WHERE id = ?", (template_id,))
+    await db.commit()
+    return {"success": True, "deleted_id": template_id}

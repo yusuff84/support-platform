@@ -91,6 +91,10 @@ export const api = {
     escalate: (id) => request(`/tickets/${id}/escalate`, { method: 'POST' }),
     getVpnKeys: (id) => request(`/tickets/${id}/vpn-keys`),
     getTaxonomy: () => request('/tickets/taxonomy'),
+    getTemplates: (channel = 'all') => request(`/tickets/templates?channel=${channel}`),
+    createTemplate: (data) => request('/tickets/templates', { method: 'POST', body: JSON.stringify(data) }),
+    updateTemplate: (id, data) => request(`/tickets/templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteTemplate: (id) => request(`/tickets/templates/${id}`, { method: 'DELETE' }),
     getRefundablePayments: (id) => request('/tickets/' + id + '/refundable-payments'),
     processRefund: (id, data) => request('/tickets/' + id + '/refund', { method: 'POST', body: JSON.stringify(data) })
   },
