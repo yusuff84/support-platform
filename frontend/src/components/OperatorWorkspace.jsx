@@ -184,6 +184,8 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
   const [templateForm, setTemplateForm] = useState({ category: '', title: '', text: '', channel: 'all' });
   const [isAddingTemplate, setIsAddingTemplate] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [activeQueueFilter, setActiveQueueFilter] = useState('all');
   const prevMsgCountRef = useRef(0);
   const prevTicketsCountRef = useRef(0);
 
@@ -791,8 +793,76 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                 placeholder="Поиск по имени, номеру, ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 focus:outline-none focus:border-zinc-500 shadow-xs"
+                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 rounded-lg pl-8 pr-7 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 focus:outline-none focus:border-zinc-500 shadow-xs"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-xs p-0.5"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Quick Filter Pills (Thumb-friendly 1-tap filtering) */}
+            <div className="flex items-center space-x-1 overflow-x-auto pb-0.5 text-[11px] font-medium touch-pan-x">
+              <button
+                type="button"
+                onClick={() => { setChannelFilter(''); setStatusFilter(''); }}
+                className={`px-2 py-0.5 rounded-full shrink-0 border transition-colors ${
+                  !channelFilter && !statusFilter
+                    ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 font-bold border-transparent'
+                    : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-250 dark:border-zinc-800'
+                }`}
+              >
+                Все
+              </button>
+              <button
+                type="button"
+                onClick={() => setChannelFilter(channelFilter === 'telegram' ? '' : 'telegram')}
+                className={`px-2 py-0.5 rounded-full shrink-0 border transition-colors flex items-center space-x-1 ${
+                  channelFilter === 'telegram'
+                    ? 'bg-sky-500 text-white font-bold border-transparent'
+                    : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-250 dark:border-zinc-800'
+                }`}
+              >
+                <span>Telegram</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChannelFilter(channelFilter === 'instagram' ? '' : 'instagram')}
+                className={`px-2 py-0.5 rounded-full shrink-0 border transition-colors flex items-center space-x-1 ${
+                  channelFilter === 'instagram'
+                    ? 'bg-pink-500 text-white font-bold border-transparent'
+                    : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-250 dark:border-zinc-800'
+                }`}
+              >
+                <span>Instagram</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter(statusFilter === 'new' ? '' : 'new')}
+                className={`px-2 py-0.5 rounded-full shrink-0 border transition-colors ${
+                  statusFilter === 'new'
+                    ? 'bg-emerald-600 text-white font-bold border-transparent'
+                    : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-250 dark:border-zinc-800'
+                }`}
+              >
+                Новые
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter(statusFilter === 'in_progress' ? '' : 'in_progress')}
+                className={`px-2 py-0.5 rounded-full shrink-0 border transition-colors ${
+                  statusFilter === 'in_progress'
+                    ? 'bg-amber-600 text-white font-bold border-transparent'
+                    : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-250 dark:border-zinc-800'
+                }`}
+              >
+                В работе
+              </button>
             </div>
 
             {/* Filters */}
@@ -830,7 +900,7 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
           </div>
 
           {/* Master List Items */}
-          <div className="flex-1 overflow-y-auto divide-y divide-zinc-150 dark:divide-zinc-900">
+          <div className="flex-1 overflow-y-auto divide-y divide-zinc-150 dark:divide-zinc-900 pb-24 md:pb-2">
             {tickets.length === 0 ? (
               <div className="p-8 text-center text-xs text-zinc-400 font-mono">
                 Обращений не найдено
@@ -956,14 +1026,31 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                     </div>
                   </div>
 
-                  {/* Passport button */}
-                  <div className="flex items-center space-x-1">
+                  {/* Mobile Segmented Navigation: [ 💬 Диалог | 📋 Паспорт ] */}
+                  <div className="md:hidden flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
                     <button
-                      onClick={() => setMobileView('passport')}
-                      className="md:hidden px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 flex items-center space-x-1"
+                      type="button"
+                      onClick={() => setMobileView('chat')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center space-x-1 ${
+                        mobileView === 'chat'
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
+                          : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                      }`}
                     >
+                      <MessageSquare className="w-3 h-3" />
+                      <span>Диалог</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileView('passport')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center space-x-1 ${
+                        mobileView === 'passport'
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
+                          : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                      }`}
+                    >
+                      <Sliders className="w-3 h-3" />
                       <span>Паспорт</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -1202,9 +1289,43 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                 <button
                   type="button"
                   onClick={() => handleSendGuide('Android')}
-                  className="px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 font-mono text-xs"
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 font-mono text-xs flex items-center space-x-1"
                 >
-                  Android
+                  <span>Android</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSendGuide('Windows')}
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 font-mono text-xs flex items-center space-x-1"
+                >
+                  <span>Windows</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSendGuide('macOS')}
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 font-mono text-xs flex items-center space-x-1"
+                >
+                  <span>macOS</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSendTgBotLink}
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-800 shrink-0 text-xs flex items-center space-x-1"
+                  title="Отправить ссылку на бота"
+                >
+                  <span>Бот</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRefundModalOpen(true)}
+                  className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 text-emerald-600 dark:text-emerald-400 border border-zinc-250 dark:border-zinc-800 shrink-0 text-xs font-semibold flex items-center space-x-1"
+                  title="Оформить возврат средств"
+                >
+                  <span>Возврат</span>
                 </button>
 
                 <button
@@ -1321,7 +1442,7 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
         {/* PANE 3: INSPECTOR (PASSPORT 7 FIELDS & CRM DATA)         */}
         {/* ======================================================== */}
         <div className={`w-full md:w-80 lg:w-88 border-l border-zinc-200 dark:border-zinc-800 overflow-y-auto bg-white dark:bg-zinc-950 p-4 space-y-4 shrink-0 shadow-xs ${
-          mobileView === 'passport' ? 'flex flex-col flex-1' : 'hidden md:flex flex-col'
+          mobileView === 'passport' ? 'flex flex-col flex-1 pb-28 md:pb-4' : 'hidden md:flex flex-col'
         }`}>
           {selectedTicket ? (
             <>
@@ -1329,13 +1450,32 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
               <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => setMobileView('chat')}
+                    onClick={() => setMobileView('queue')}
                     className="md:hidden p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-850 text-zinc-700 dark:text-zinc-200"
-                    title="Назад в чат"
+                    title="К очереди"
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
-                  <div className="flex flex-col">
+                  {/* Mobile Segmented Navigation in Passport */}
+                  <div className="md:hidden flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setMobileView('chat')}
+                      className="px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center space-x-1 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400"
+                    >
+                      <MessageSquare className="w-3 h-3" />
+                      <span>Диалог</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileView('passport')}
+                      className="px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center space-x-1 bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs"
+                    >
+                      <Sliders className="w-3 h-3" />
+                      <span>Паспорт</span>
+                    </button>
+                  </div>
+                  <div className="hidden md:flex flex-col">
                     <span className="font-bold text-xs uppercase tracking-wide text-zinc-900 dark:text-zinc-100 font-mono">
                       Паспорт обращения
                     </span>
@@ -1772,6 +1912,18 @@ export default function OperatorWorkspace({ user, onMobileChatChange }) {
                   }));
                 } else {
                   displayGroups = getQuickReplies(selectedTicket?.channel);
+                }
+
+                if (templateSearch.trim()) {
+                  const q = templateSearch.toLowerCase();
+                  displayGroups = displayGroups.map(group => ({
+                    ...group,
+                    items: group.items.filter(item => 
+                      item.title?.toLowerCase().includes(q) ||
+                      item.text?.toLowerCase().includes(q) ||
+                      group.category?.toLowerCase().includes(q)
+                    )
+                  })).filter(group => group.items.length > 0);
                 }
 
                 return displayGroups.map((group, gIdx) => (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Search, Plus } from 'lucide-react';
+import { BookOpen, Search, Plus, Copy, Check } from 'lucide-react';
 import { api } from '../api';
 
 export default function KnowledgeBaseView({ user }) {
@@ -7,6 +7,8 @@ export default function KnowledgeBaseView({ user }) {
   const [search, setSearch] = useState('');
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [copiedContent, setCopiedContent] = useState(false);
+  const [copiedShort, setCopiedShort] = useState(false);
   const [form, setForm] = useState({
     title: '',
     category: 'Не умеет подключить',
@@ -132,8 +134,25 @@ export default function KnowledgeBaseView({ user }) {
                 </div>
               )}
 
-              <div className="text-xs text-zinc-800 dark:text-zinc-200 font-mono whitespace-pre-wrap leading-relaxed bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                {selectedArticle.content}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-zinc-500 font-mono uppercase tracking-wider">Полный текст инструкции:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedArticle.content);
+                      setCopiedContent(true);
+                      setTimeout(() => setCopiedContent(false), 2000);
+                    }}
+                    className="px-2.5 py-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 flex items-center space-x-1"
+                  >
+                    {copiedContent ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedContent ? 'Скопировано!' : 'Копировать'}</span>
+                  </button>
+                </div>
+                <div className="text-xs text-zinc-800 dark:text-zinc-200 font-mono whitespace-pre-wrap leading-relaxed bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                  {selectedArticle.content}
+                </div>
               </div>
             </>
           ) : (
