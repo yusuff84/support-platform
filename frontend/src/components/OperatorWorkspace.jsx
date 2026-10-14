@@ -1,25 +1,7 @@
-
-// Audio chime synthesizer via Web Audio API (no external mp3 needed)
-const playChime = () => {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.35);
-  } catch (e) {
-    console.debug('Audio chime error:', e);
-  }
-};
 import React, { useState, useEffect, useRef } from 'react';
 import { 
+  MessageSquare,
+  Sliders,
   Send, 
   Key, 
   FileText, 
@@ -50,9 +32,33 @@ import {
 import { TelegramIcon, InstagramIcon, ChannelBadge } from './Icons';
 import { api } from '../api';
 
+// Audio chime synthesizer via Web Audio API (no external mp3 needed)
+const playChime = () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  } catch (e) {
+    console.debug('Audio chime error:', e);
+  }
+};
+
+
 // Predefined Canned Responses (Быстрые ответы с учетом канала)
 const getQuickReplies = (channel) => {
   const isTG = channel === 'telegram';
+
+
+
   const categories = [];
 
   // Keys & Subscription are ONLY for Telegram! For Instagram, completely omitted!

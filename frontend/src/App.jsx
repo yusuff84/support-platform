@@ -8,6 +8,51 @@ import KnowledgeBaseView from './components/KnowledgeBaseView';
 import SystemSettingsView from './components/SystemSettingsView';
 import LoginModal from './components/LoginModal';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 bg-zinc-50 dark:bg-zinc-950">
+          <div className="p-3 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider font-mono">
+            Произошла ошибка при загрузке вкладки
+          </h2>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md font-mono bg-zinc-100 dark:bg-zinc-900 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            {this.state.error?.message || "Неизвестная ошибка интерфейса"}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 text-xs font-bold shadow-xs hover:opacity-90"
+          >
+            Перезагрузить страницу
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const DEMO_CREDENTIALS = {
   director: { username: 'director', password: 'director123' },
   lead: { username: 'lead', password: 'lead123' },
@@ -105,11 +150,13 @@ export default function App() {
       />
 
       <main className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
-        {currentTab === 'dashboard' && <div className="h-full overflow-y-auto"><DirectorDashboard /></div>}
-        {currentTab === 'workspace' && <OperatorWorkspace user={user} onMobileChatChange={setMobileChatOpen} />}
-        {currentTab === 'problems' && <div className="h-full overflow-y-auto"><ProblemRegisterView user={user} /></div>}
-        {currentTab === 'knowledge' && <div className="h-full overflow-y-auto"><KnowledgeBaseView user={user} /></div>}
-        {currentTab === 'settings' && <div className="h-full overflow-y-auto"><SystemSettingsView user={user} /></div>}
+        <ErrorBoundary>
+          {currentTab === 'dashboard' && <div className="h-full overflow-y-auto"><DirectorDashboard /></div>}
+          {currentTab === 'workspace' && <OperatorWorkspace user={user} onMobileChatChange={setMobileChatOpen} />}
+          {currentTab === 'problems' && <div className="h-full overflow-y-auto"><ProblemRegisterView user={user} /></div>}
+          {currentTab === 'knowledge' && <div className="h-full overflow-y-auto"><KnowledgeBaseView user={user} /></div>}
+          {currentTab === 'settings' && <div className="h-full overflow-y-auto"><SystemSettingsView user={user} /></div>}
+        </ErrorBoundary>
       </main>
     </div>
   );
