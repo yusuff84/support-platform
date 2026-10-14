@@ -15,7 +15,7 @@ class Settings(BaseModel):
     # Database
     DATABASE_PATH: str = os.getenv("DATABASE_PATH", "data/support_os.sqlite3")
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{DATABASE_PATH}")
-    VPN_DATABASE_URL: str = os.getenv("VPN_DATABASE_URL", "")  # Postgres connection string to main VPN DB
+    VPN_DATABASE_URL: str = os.getenv("VPN_DATABASE_URL", "postgresql://support_keys_readonly:MPInNnoucAsOCYjKHmxatKaDGuReEz4K@host.docker.internal:5432/databasetop")  # Postgres connection string to main VPN DB
 
     # Redis (Optional)
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")

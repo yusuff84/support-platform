@@ -34,6 +34,13 @@ async def lifespan(app: FastAPI):
     await init_db()
     await seed_data()
 
+    # Direct Read-Only PostgreSQL pool to databasetop
+    try:
+        from app.vpn.pg_pool import init_pg_pool
+        await init_pg_pool()
+    except Exception as e:
+        logger.warning(f"Could not initialize PostgreSQL direct pool: {e}")
+
     # Automatic background Telegram Bot polling if token configured
     if settings.TELEGRAM_BOT_TOKEN and os.getenv("TELEGRAM_POLLING", "false").lower() == "true":
         try:
@@ -60,6 +67,11 @@ async def lifespan(app: FastAPI):
             await bot_instance.session.close()
         except Exception:
             pass
+    try:
+        from app.vpn.pg_pool import close_pg_pool
+        await close_pg_pool()
+    except Exception:
+        pass
     logger.info("Application shutdown finished.")
 
 app = FastAPI(

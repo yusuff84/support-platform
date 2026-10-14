@@ -8,31 +8,6 @@ import random
 
 from app.database import get_db
 from app.auth import get_current_user, require_agent_or_higher
-from pydantic import BaseModel
-
-class QuickTemplateCreate(BaseModel):
-    category: str
-    title: str
-    text: str
-    channel: Optional[str] = "all"
-    sort_order: Optional[int] = 0
-
-class QuickTemplateUpdate(BaseModel):
-    category: Optional[str] = None
-    title: Optional[str] = None
-    text: Optional[str] = None
-    channel: Optional[str] = None
-    sort_order: Optional[int] = None
-
-class QuickTemplateOut(BaseModel):
-    id: int
-    category: str
-    title: str
-    text: str
-    channel: str
-    sort_order: int
-    created_at: str
-
 from app.models import (
     TicketOut,
     TicketCreate,
@@ -474,7 +449,7 @@ async def get_ticket_refundable_payments(
     current_user: dict = Depends(get_current_user),
     db: aiosqlite.Connection = Depends(get_db)
 ):
-    """Fetches user refundable payments from main VPN database with pro-rata calculation."""
+    """Fetches user refundable payments directly from PostgreSQL databasetop with pro-rata calculation."""
     async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
         ticket = await cursor.fetchone()
         if not ticket:
@@ -484,17 +459,9 @@ async def get_ticket_refundable_payments(
     if not channel_user_id.isdigit():
         return {"success": True, "tg_id": channel_user_id, "payments": []}
 
-    try:
-        import httpx
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            res = await client.get(f"http://host.docker.internal:3001/support-api/payments/refundable/{channel_user_id}")
-            if res.status_code == 200:
-                return res.json()
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning(f"Error querying refundable payments: {e}")
-
-    return {"success": True, "tg_id": channel_user_id, "payments": []}
+    from app.vpn.adapter import get_user_refundable_payments_direct
+    payments = await get_user_refundable_payments_direct(channel_user_id)
+    return {"success": True, "tg_id": channel_user_id, "payments": payments}
 
 @router.post("/{ticket_id}/refund")
 async def execute_ticket_refund(
@@ -520,12 +487,10 @@ async def execute_ticket_refund(
     }
 
     try:
-        import httpx
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            res = await client.post("http://host.docker.internal:3001/support-api/payments/refund", json=payload)
-            data = res.json()
-            if not data.get("success"):
-                raise HTTPException(status_code=400, detail=data.get("error", "Ошибка выполнения возврата"))
+        from app.vpn.adapter import process_ticket_refund_via_bot
+        data = await process_ticket_refund_via_bot(payload)
+        if not data.get("success"):
+            raise HTTPException(status_code=400, detail=data.get("error", "Ошибка выполнения возврата"))
     except HTTPException:
         raise
     except Exception as e:
@@ -577,32 +542,25 @@ async def send_guide(
     guides = {
         "iPhone": (
             "📱 Инструкция по подключению на iPhone / iOS:\n\n"
-            "1. Установите приложение Happ или Incy из App Store.\n"
-            "2. Скопируйте ваш ключ доступа (или ссылку на подписку).\n"
-            "3. Откройте приложение — оно автоматически предложит добавить сервер из буфера.\n"
-            "4. Нажмите кнопку «Подключить» и подтвердите добавление VPN-профиля.\n\n"
+            "1. Установите приложение Amnezia VPN или Happ из App Store.\n"
+            "2. Скопируйте ваш ключ доступа (начинается с vless:// или vpn://).\n"
+            "3. Откройте приложение, нажмите «Добавить конфигурацию» ➔ «Из буфера обмена».\n"
+            "4. Нажмите большую кнопку «Подключить» и разрешите добавление VPN-конфигурации.\n\n"
             "Если кнопка горит зелёным — вы защищены! Проверить: 2ip.ru"
         ),
         "Android": (
             "🤖 Инструкция по подключению на Android:\n\n"
-            "1. Установите Incy, Happ или v2rayNG из Google Play.\n"
+            "1. Установите v2rayNG или Amnezia VPN из Google Play.\n"
             "2. Скопируйте ваш ключ доступа.\n"
-            "3. В приложении нажмите «+» (или «Импорт из буфера обмена»).\n"
-            "4. Выберите сервер и нажмите на круглую кнопку подключения.\n\n"
+            "3. В приложении нажмите «+» (вверху справа) ➔ «Импорт из буфера обмена».\n"
+            "4. Нажмите на круглую кнопку подключения внизу экрана.\n\n"
             "При первом запуске подтвердите системный запрос на VPN-соединение."
         ),
         "Windows": (
             "💻 Инструкция по подключению на Windows:\n\n"
-            "1. Установите Happ Desktop, Hiddify или v2rayN.\n"
-            "2. Скопируйте ссылку подписки или ключ.\n"
-            "3. Нажмите «Импорт из буфера» и нажмите «Подключить».\n"
-            "4. Выберите режим TUN (системный прокси) для работы всех программ."
-        ),
-        "macOS": (
-            "🍏 Инструкция по подключению на Mac / macOS:\n\n"
-            "1. Установите Happ или Incy из Mac App Store.\n"
-            "2. Скопируйте ссылку на подписку или ключ.\n"
-            "3. Вставьте конфигурацию в приложение и нажмите «Подключить»."
+            "1. Скачайте Amnezia VPN или v2rayN для Windows.\n"
+            "2. Запустите приложение от имени администратора.\n"
+            "3. Вставьте ваш ключ доступа и нажмите «Подключиться»."
         )
     }
     text = guides.get(platform, guides["iPhone"])
@@ -800,10 +758,6 @@ async def upload_attachment(
     await db.execute("UPDATE tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (ticket_id,))
     await db.commit()
 
-    # Route media attachment out to Telegram / Instagram
-    from app.channels.dispatcher import dispatch_outgoing_message
-    await dispatch_outgoing_message(ticket, msg_text, media_path=filepath, media_type=media_type)
-
     return MessageOut(
         id=msg_id,
         ticket_id=ticket_id,
@@ -818,105 +772,3 @@ async def upload_attachment(
 
 
 
-
-
-# ==============================================================
-# QUICK REPLY TEMPLATES MANAGEMENT API
-# ==============================================================
-
-@router.get("/templates", response_model=List[QuickTemplateOut])
-async def list_quick_templates(
-    channel: Optional[str] = None,
-    current_user: dict = Depends(get_current_user),
-    db: aiosqlite.Connection = Depends(get_db)
-):
-    query = "SELECT id, category, title, text, channel, sort_order, created_at FROM quick_reply_templates"
-    params = []
-    if channel and channel != "all":
-        query += " WHERE channel IN ('all', ?)"
-        params.append(channel)
-    query += " ORDER BY category ASC, sort_order ASC, id ASC"
-
-    async with db.execute(query, tuple(params)) as cursor:
-        rows = await cursor.fetchall()
-        return [
-            QuickTemplateOut(
-                id=r[0],
-                category=r[1],
-                title=r[2],
-                text=r[3],
-                channel=r[4],
-                sort_order=r[5],
-                created_at=str(r[6])
-            )
-            for r in rows
-        ]
-
-@router.post("/templates", response_model=QuickTemplateOut)
-async def create_quick_template(
-    t_in: QuickTemplateCreate,
-    current_user: dict = Depends(get_current_user),
-    db: aiosqlite.Connection = Depends(get_db)
-):
-    cursor = await db.execute(
-        "INSERT INTO quick_reply_templates (category, title, text, channel, sort_order) VALUES (?, ?, ?, ?, ?)",
-        (t_in.category, t_in.title, t_in.text, t_in.channel or "all", t_in.sort_order or 0)
-    )
-    t_id = cursor.lastrowid
-    await db.commit()
-
-    async with db.execute("SELECT id, category, title, text, channel, sort_order, created_at FROM quick_reply_templates WHERE id = ?", (t_id,)) as c:
-        r = await c.fetchone()
-        return QuickTemplateOut(
-            id=r[0], category=r[1], title=r[2], text=r[3], channel=r[4], sort_order=r[5], created_at=str(r[6])
-        )
-
-@router.put("/templates/{template_id}", response_model=QuickTemplateOut)
-async def update_quick_template(
-    template_id: int,
-    t_in: QuickTemplateUpdate,
-    current_user: dict = Depends(get_current_user),
-    db: aiosqlite.Connection = Depends(get_db)
-):
-    updates = []
-    params = []
-    if t_in.category is not None:
-        updates.append("category = ?")
-        params.append(t_in.category)
-    if t_in.title is not None:
-        updates.append("title = ?")
-        params.append(t_in.title)
-    if t_in.text is not None:
-        updates.append("text = ?")
-        params.append(t_in.text)
-    if t_in.channel is not None:
-        updates.append("channel = ?")
-        params.append(t_in.channel)
-    if t_in.sort_order is not None:
-        updates.append("sort_order = ?")
-        params.append(t_in.sort_order)
-
-    if not updates:
-        raise HTTPException(status_code=400, detail="Нет данных для обновления")
-
-    params.append(template_id)
-    await db.execute(f"UPDATE quick_reply_templates SET {', '.join(updates)} WHERE id = ?", tuple(params))
-    await db.commit()
-
-    async with db.execute("SELECT id, category, title, text, channel, sort_order, created_at FROM quick_reply_templates WHERE id = ?", (template_id,)) as c:
-        r = await c.fetchone()
-        if not r:
-            raise HTTPException(status_code=404, detail="Шаблон не найден")
-        return QuickTemplateOut(
-            id=r[0], category=r[1], title=r[2], text=r[3], channel=r[4], sort_order=r[5], created_at=str(r[6])
-        )
-
-@router.delete("/templates/{template_id}")
-async def delete_quick_template(
-    template_id: int,
-    current_user: dict = Depends(get_current_user),
-    db: aiosqlite.Connection = Depends(get_db)
-):
-    await db.execute("DELETE FROM quick_reply_templates WHERE id = ?", (template_id,))
-    await db.commit()
-    return {"success": True, "deleted_id": template_id}
