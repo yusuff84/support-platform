@@ -111,6 +111,20 @@ async def get_top_problems_stats(db: aiosqlite.Connection, days: int = 7) -> Lis
     ) as cursor:
         current_rows = await cursor.fetchall()
 
+    # Fallback to all available records if demo/seed database dates are older than current window
+    if not current_rows:
+        async with db.execute(
+            """
+            SELECT 
+                COALESCE(category, 'Не классифицировано') as cat,
+                COUNT(id) as count
+            FROM tickets
+            GROUP BY cat
+            ORDER BY count DESC
+            """
+        ) as cursor:
+            current_rows = await cursor.fetchall()
+
     total_current = sum(r["count"] for r in current_rows) or 1
 
     # Previous period for trend calculation

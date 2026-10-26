@@ -135,19 +135,19 @@ export default function DirectorDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
           {/* Card 1: Working Normally (GREEN Indicator) */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-xs relative overflow-hidden">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-4.5 shadow-xs hover:shadow-md transition-all relative overflow-hidden">
             <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-              <span className="font-medium text-zinc-700 dark:text-zinc-300 flex items-center space-x-1.5">
+              <span className="font-semibold text-zinc-800 dark:text-zinc-200 flex items-center space-x-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                 <span>1. Работают нормально</span>
               </span>
               <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div className="text-2xl font-bold text-zinc-900 dark:text-white font-mono">
+            <div className="text-2xl font-bold text-zinc-900 dark:text-white font-mono mt-1">
               {health?.working_normally_users.toLocaleString()}
             </div>
-            <div className="flex items-center space-x-2 mt-2">
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+            <div className="flex items-center space-x-2 mt-2.5">
+              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                 <div 
                   className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
                   style={{ width: `${health?.working_normally_pct}%` }}
@@ -157,25 +157,25 @@ export default function DirectorDashboard() {
                 {health?.working_normally_pct}%
               </span>
             </div>
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2">
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
               Соединения активны, обращений нет
             </div>
           </div>
 
           {/* Card 2: Users with Problems (RED Indicator) */}
-          <div className="bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-950/70 rounded-xl p-4 shadow-xs relative overflow-hidden">
+          <div className="bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-950/70 rounded-2xl p-4.5 shadow-xs hover:shadow-md transition-all relative overflow-hidden">
             <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-              <span className="font-medium text-rose-700 dark:text-rose-300 flex items-center space-x-1.5">
+              <span className="font-semibold text-rose-700 dark:text-rose-300 flex items-center space-x-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
                 <span>2. Были проблемы</span>
               </span>
               <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             </div>
-            <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">
+            <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono mt-1">
               {health?.problem_users.toLocaleString()}
             </div>
-            <div className="flex items-center space-x-2 mt-2">
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+            <div className="flex items-center space-x-2 mt-2.5">
+              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                 <div 
                   className="bg-rose-500 h-full rounded-full transition-all duration-500" 
                   style={{ width: `${health?.problem_users_pct * 4}%` }}
@@ -187,26 +187,26 @@ export default function DirectorDashboard() {
             </div>
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2 flex items-center justify-between font-mono">
               <span>User Problem Rate:</span>
-              <span className="px-1.5 py-0.2 rounded font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900">
+              <span className="px-2 py-0.5 rounded-full font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900">
                 {health?.user_problem_rate_pct}%
               </span>
             </div>
           </div>
 
           {/* Card 3: Unknown Status (AMBER/YELLOW Indicator) */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-xs relative overflow-hidden">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-4.5 shadow-xs hover:shadow-md transition-all relative overflow-hidden">
             <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-              <span className="font-medium text-zinc-700 dark:text-zinc-300 flex items-center space-x-1.5">
+              <span className="font-semibold text-zinc-800 dark:text-zinc-200 flex items-center space-x-1.5">
                 <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                 <span>3. Неизвестный статус</span>
               </span>
               <Users className="w-4 h-4 text-amber-500" />
             </div>
-            <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-200 font-mono">
+            <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-200 font-mono mt-1">
               {health?.unknown_status_users.toLocaleString()}
             </div>
-            <div className="flex items-center space-x-2 mt-2">
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+            <div className="flex items-center space-x-2 mt-2.5">
+              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                 <div 
                   className="bg-amber-500 h-full rounded-full" 
                   style={{ width: `${health?.unknown_status_pct * 8}%` }}
@@ -216,25 +216,25 @@ export default function DirectorDashboard() {
                 {health?.unknown_status_pct}%
               </span>
             </div>
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2">
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
               Без недавних сессий и без обращений
             </div>
           </div>
 
           {/* Card 4: Inactive Users (Neutral Indicator) */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-xs relative overflow-hidden">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-4.5 shadow-xs hover:shadow-md transition-all relative overflow-hidden">
             <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-              <span className="font-medium text-zinc-700 dark:text-zinc-300 flex items-center space-x-1.5">
+              <span className="font-semibold text-zinc-800 dark:text-zinc-200 flex items-center space-x-1.5">
                 <span className="w-2 h-2 rounded-full bg-zinc-400"></span>
                 <span>4. Неактивны</span>
               </span>
               <Clock className="w-4 h-4 text-zinc-400" />
             </div>
-            <div className="text-2xl font-bold text-zinc-700 dark:text-zinc-300 font-mono">
+            <div className="text-2xl font-bold text-zinc-700 dark:text-zinc-300 font-mono mt-1">
               {health?.inactive_users.toLocaleString()}
             </div>
-            <div className="flex items-center space-x-2 mt-2">
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+            <div className="flex items-center space-x-2 mt-2.5">
+              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                 <div 
                   className="bg-zinc-400 dark:bg-zinc-600 h-full rounded-full" 
                   style={{ width: `${health?.inactive_users_pct * 10}%` }}
@@ -244,7 +244,7 @@ export default function DirectorDashboard() {
                 {health?.inactive_users_pct}%
               </span>
             </div>
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2">
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
               Не подключались более 30 дней
             </div>
           </div>
@@ -252,8 +252,8 @@ export default function DirectorDashboard() {
       </div>
 
       {/* 3. Support Scoreboard Pattern with Informative Targets */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-3 shadow-xs">
-        <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-5 space-y-3.5 shadow-xs">
+        <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono">
               SUPPORT SCORE — Качество работы поддержки
@@ -263,42 +263,42 @@ export default function DirectorDashboard() {
             </p>
           </div>
           <span className="text-xs text-zinc-600 dark:text-zinc-300 font-mono">
-            Всего обращений за неделю: <strong className="text-zinc-900 dark:text-white">{health?.total_tickets_period}</strong>
+            Всего обращений за неделю: <strong className="text-zinc-900 dark:text-white font-bold">{health?.total_tickets_period}</strong>
           </span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-2.5 pt-1">
-          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 pt-1">
+          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-3 shadow-xs">
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Решено саппортом</div>
             <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">{health?.resolved_pct}%</div>
             <div className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-0.5 font-mono">Ориентир &gt; 90%</div>
           </div>
 
-          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5">
+          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-3 shadow-xs">
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Время решения (MTTR)</div>
             <div className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5">{health?.median_resolution_time_min} мин</div>
             <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 font-mono">Медиана закрытия</div>
           </div>
 
-          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5">
+          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-3 shadow-xs">
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">С 1-го контакта (FCR)</div>
             <div className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5">{health?.first_contact_resolution_pct}%</div>
             <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 font-mono">Без повторных писем</div>
           </div>
 
-          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5">
+          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-3 shadow-xs">
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">CSAT Оценка</div>
             <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">{health?.csat_pct}%</div>
             <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 font-mono">Удовлетворенность</div>
           </div>
 
-          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5">
+          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-3 shadow-xs">
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Автоматизация / AI</div>
             <div className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5">{health?.automation_rate_pct}%</div>
             <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 font-mono">Закрыто ботом / FAQ</div>
           </div>
 
-          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5">
+          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-3 shadow-xs">
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Эскалации инженеру</div>
             <div className="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono mt-0.5">{health?.escalated_pct}%</div>
             <div className="text-[10px] text-amber-600 dark:text-amber-500 mt-0.5 font-mono">Требуют правок кода</div>
@@ -309,7 +309,7 @@ export default function DirectorDashboard() {
       {/* 4. Two-Column Analytics Drill-down Pattern */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left: TOP Problems Ranking */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex flex-col justify-between shadow-xs">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-4.5 flex flex-col justify-between shadow-xs">
           <div>
             <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800 mb-3">
               <div>
@@ -376,7 +376,7 @@ export default function DirectorDashboard() {
         </div>
 
         {/* Right: Root Cause Anomaly Detector with RED/YELLOW badges */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex flex-col justify-between shadow-xs">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-4.5 flex flex-col justify-between shadow-xs">
           <div>
             <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800 mb-3">
               <div>
@@ -390,11 +390,11 @@ export default function DirectorDashboard() {
               <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">ITIL Problem</span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {anomalies.map((a, idx) => (
                 <div 
                   key={idx}
-                  className={`rounded-lg p-3 border transition-colors ${
+                  className={`rounded-xl p-3.5 border transition-all ${
                     a.alert_level === 'CRITICAL'
                       ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60'
                       : a.alert_level === 'WARNING'
@@ -406,7 +406,7 @@ export default function DirectorDashboard() {
                     <span className="text-xs font-bold text-zinc-900 dark:text-white font-mono">
                       {a.combination}
                     </span>
-                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
                       a.alert_level === 'CRITICAL' 
                         ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800' 
                         : a.alert_level === 'WARNING'
@@ -418,15 +418,15 @@ export default function DirectorDashboard() {
                   </div>
 
                   <div className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">
-                    Категория: <strong className="text-zinc-900 dark:text-white">{a.category}</strong> • {a.occurrences} случаев ({a.percentage_of_category}% от категории)
+                    Категория: <strong className="text-zinc-900 dark:text-white font-semibold">{a.category}</strong> • {a.occurrences} случаев ({a.percentage_of_category}% от категории)
                   </div>
 
-                  <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-zinc-200 dark:border-zinc-850 text-[10px]">
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-200/80 dark:border-zinc-850 text-[10px]">
                     <span className="text-zinc-500 dark:text-zinc-400">
                       Затронуто клиентов: <strong className="text-zinc-900 dark:text-zinc-200 font-mono">{a.unique_users}</strong>
                     </span>
                     {a.linked_problem_code ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-mono font-semibold">
+                      <span className="text-emerald-700 dark:text-emerald-400 font-mono font-bold">
                         Привязано: {a.linked_problem_code}
                       </span>
                     ) : (
@@ -447,18 +447,18 @@ export default function DirectorDashboard() {
         </div>
       </div>
 
-      {/* 5. Modal Dialog Pattern */}
+      {/* 5. Modal Dialog Pattern with Friendly Soft Corners */}
       {reportModal && (
-        <div className="fixed inset-0 bg-black/60 dark:bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-750 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950">
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-750 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950">
               <div className="flex items-center space-x-2">
                 <FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-300" />
-                <h3 className="font-bold text-xs text-zinc-900 dark:text-white uppercase tracking-wider font-mono">{reportData?.title || 'Генерация отчета...'}</h3>
+                <h3 className="font-extrabold text-xs text-zinc-900 dark:text-white uppercase tracking-wider font-mono">{reportData?.title || 'Генерация отчета...'}</h3>
               </div>
               <button
                 onClick={() => setReportModal(null)}
-                className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white text-xs px-2.5 py-1 rounded bg-zinc-150 dark:bg-zinc-800 font-mono"
+                className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white text-xs px-3 py-1 rounded-xl bg-zinc-150 dark:bg-zinc-800 font-medium"
               >
                 Закрыть
               </button>
@@ -468,11 +468,11 @@ export default function DirectorDashboard() {
               {reportData?.text || 'Загрузка данных...'}
             </div>
 
-            <div className="px-5 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between">
+            <div className="px-5 py-3.5 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between">
               <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Готовый текст для отправки руководству в рабочий чат</span>
               <button
                 onClick={handleCopyReport}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-xs font-bold text-white dark:text-zinc-950 transition-colors shadow-xs"
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-xs font-bold text-white dark:text-zinc-950 transition-all shadow-xs active:scale-95"
               >
                 {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                 <span>{copied ? 'Скопировано в буфер!' : 'Скопировать текст'}</span>
