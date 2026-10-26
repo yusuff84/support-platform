@@ -26,6 +26,7 @@ class DiagnosticWizard(StatesGroup):
 # In-memory cooldown caches (in production backed by Redis if available)
 after_hours_cooldown: Dict[str, datetime] = {}
 auto_key_cooldown: Dict[str, datetime] = {}
+env_survey_cooldown: Dict[str, datetime] = {}
 silent_threads: set = set()
 banned_users: set = set()
 
@@ -352,34 +353,82 @@ def setup_bot_dispatcher() -> Dispatcher:
                         await message.answer(auto_key_reply)
                         await save_ticket_message(ticket["id"], "ai", auto_key_reply, "AI Auto-Key")
 
-        # 4. Background AI Auto-Triage on first incoming message
-        if not ticket["ai_triaged"]:
-            from app.ai.triage import auto_triage_ticket
-            triage_res = await auto_triage_ticket([text])
-            async with aiosqlite.connect(DB_PATH) as db:
-                await db.execute(
-                    """
-                    UPDATE tickets SET
-                        category = COALESCE(category, ?),
-                        subcategory = COALESCE(subcategory, ?),
-                        device = COALESCE(device, ?),
-                        operator = COALESCE(operator, ?),
-                        app = COALESCE(app, ?),
-                        cause = COALESCE(cause, ?),
-                        severity = COALESCE(severity, ?),
-                        ai_triaged = 1,
-                        ai_diagnostic_summary = ?,
-                        ai_confidence = ?
-                    WHERE id = ?
-                    """,
-                    (
-                        triage_res.category, triage_res.subcategory,
-                        triage_res.device, triage_res.operator, triage_res.app,
-                        triage_res.cause, triage_res.severity,
-                        triage_res.diagnostic_summary, triage_res.confidence,
-                        ticket["id"]
-                    )
+        # 4. Smart Environment Survey & Auto-Triage:
+        # Bot asks for environment if missing, parses answer, and auto-populates Passport!
+        from app.ai.triage import auto_triage_ticket
+        env_missing_before = not ticket.get("device") or not ticket.get("operator")
+
+        # Fetch recent customer messages for context
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT message_text FROM ticket_messages WHERE ticket_id = ? AND sender_type = 'client' ORDER BY id ASC",
+                (ticket["id"],)
+            ) as cur:
+                client_msgs = [r["message_text"] for r in await cur.fetchall() if r["message_text"]]
+
+        triage_res = await auto_triage_ticket(client_msgs or [text])
+
+        # Automatically update ticket passport with extracted data
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                """
+                UPDATE tickets SET
+                    category = COALESCE(?, category),
+                    subcategory = COALESCE(?, subcategory),
+                    device = COALESCE(?, device),
+                    operator = COALESCE(?, operator),
+                    app = COALESCE(?, app),
+                    cause = COALESCE(?, cause),
+                    severity = COALESCE(?, severity),
+                    ai_triaged = 1,
+                    ai_diagnostic_summary = ?,
+                    ai_confidence = ?
+                WHERE id = ?
+                """,
+                (
+                    triage_res.category, triage_res.subcategory,
+                    triage_res.device, triage_res.operator, triage_res.app,
+                    triage_res.cause, triage_res.severity,
+                    triage_res.diagnostic_summary, triage_res.confidence,
+                    ticket["id"]
                 )
-                await db.commit()
+            )
+            await db.commit()
+
+        # If environment is STILL not known after triage, bot automatically asks the customer!
+        env_still_missing = (not ticket.get("device") and not triage_res.device) or (not ticket.get("operator") and not triage_res.operator)
+        if env_still_missing:
+            now = datetime.now(timezone.utc)
+            last_survey = env_survey_cooldown.get(user_id_str)
+            if not last_survey or (now - last_survey) > timedelta(minutes=15):
+                env_survey_cooldown[user_id_str] = now
+                survey_kb = InlineKeyboardMarkup(inline_keyboard=[
+                    [
+                        InlineKeyboardButton(text="📱 iPhone / iOS", callback_data="diag_dev:iPhone"),
+                        InlineKeyboardButton(text="🤖 Android", callback_data="diag_dev:Android")
+                    ],
+                    [
+                        InlineKeyboardButton(text="💻 Windows PC", callback_data="diag_dev:Windows"),
+                        InlineKeyboardButton(text="🍎 Mac / macOS", callback_data="diag_dev:Mac")
+                    ]
+                ])
+                survey_text = (
+                    "👋 Чтобы мы сразу определили причину и помогли восстановить доступ, уточните, пожалуйста:\n\n"
+                    "1. 📱 <b>С какого устройства</b> вы подключаетесь?\n"
+                    "2. 📡 <b>Какой у вас оператор связи</b> или интернет (МТС, Мегафон, Билайн, Tele2, Wi-Fi, Ростелеком)?\n"
+                    "3. 🧩 <b>Какое приложение</b> установлено (Incy, Happ, Amnezia, v2rayNG, Outline)?\n\n"
+                    "<i>(Можете выбрать кнопку внизу или просто написать в ответ, например: «айфон, мтс, Happ»)</i>"
+                )
+                await message.answer(survey_text, parse_mode="HTML", reply_markup=survey_kb)
+                await save_ticket_message(ticket["id"], "ai", survey_text, "Бот (Опрос окружения)")
+        elif env_missing_before and (triage_res.device or triage_res.operator):
+            # Client provided their environment! Confirm and notify
+            ack_dev = triage_res.device or ticket.get("device") or "устройство"
+            ack_op = triage_res.operator or ticket.get("operator") or "сеть"
+            ack_app = triage_res.app or ticket.get("app") or "VPN"
+            ack_text = f"✅ Спасибо! Зафиксировали параметры: <b>{ack_dev}</b> • <b>{ack_op}</b> • <b>{ack_app}</b>.\nСпециалист поддержки уже видит ваши данные в системе и помогает в решении вопроса."
+            await message.answer(ack_text, parse_mode="HTML")
+            await save_ticket_message(ticket["id"], "ai", ack_text, "Бот (Параметры зафиксированы)")
 
     return dp

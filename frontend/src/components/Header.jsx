@@ -42,21 +42,21 @@ export default function Header({ user, currentTab, setTab, onQuickRoleSwitch, on
   return (
     <>
       {/* 1. Top Bar Header */}
-      <header className="h-14 md:h-16 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md sticky top-0 z-40 px-3 md:px-6 flex items-center justify-between select-none shadow-xs transition-all duration-200 shrink-0">
+      <header className="h-12 md:h-16 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md sticky top-0 z-40 px-2.5 md:px-6 flex items-center justify-between select-none shadow-xs transition-all duration-200 shrink-0">
         {/* Brand & Desktop Title */}
-        <div className="flex items-center space-x-3 md:space-x-5">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 text-white dark:text-zinc-950 font-black font-mono text-xs flex items-center justify-center shadow-md shadow-zinc-900/10 dark:shadow-black/40 shrink-0">
+        <div className="flex items-center space-x-2.5 md:space-x-5">
+          <div className="flex items-center space-x-2 md:space-x-3">
+            <div className="w-7 h-7 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 text-white dark:text-zinc-950 font-black font-mono text-[11px] md:text-xs flex items-center justify-center shadow-md shadow-zinc-900/10 dark:shadow-black/40 shrink-0">
               TOP
             </div>
             <div className="flex flex-col">
-              <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-xs tracking-wider text-zinc-900 dark:text-zinc-100 uppercase font-mono">SUPPORT OS</span>
-                <span className="text-[10px] text-zinc-600 dark:text-zinc-300 font-mono font-semibold px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-750">
-                  40k абонентов
+              <div className="flex items-center space-x-1.5 md:space-x-2">
+                <span className="font-extrabold text-[11px] md:text-xs tracking-wider text-zinc-900 dark:text-zinc-100 uppercase font-mono">SUPPORT OS</span>
+                <span className="text-[9px] md:text-[10px] text-zinc-600 dark:text-zinc-300 font-mono font-semibold px-1.5 py-0.2 rounded-full bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-750">
+                  40k
                 </span>
               </div>
-              <span className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-tight hidden sm:block font-medium">Контроль качества VPN-продукта</span>
+              <span className="text-[10px] md:text-[11px] text-zinc-500 dark:text-zinc-400 leading-tight hidden sm:block font-medium">Контроль качества VPN-продукта</span>
             </div>
           </div>
 

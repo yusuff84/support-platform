@@ -225,6 +225,12 @@ async def test_resolve_and_escalate_buttons():
         data_setup = setup_res.json()
         assert "Помощник по настройке" in data_setup["message_text"]
 
+        # 4. Ask Environment helper
+        ask_res = await ac.post("/api/tickets/1/ask-environment", headers=headers)
+        assert ask_res.status_code == 200
+        data_ask = ask_res.json()
+        assert "устройства" in data_ask["message_text"]
+
 @pytest.mark.asyncio
 async def test_instagram_key_restrictions():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

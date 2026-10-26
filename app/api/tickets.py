@@ -443,6 +443,28 @@ async def recreate_user_key(
     msg = MessageCreate(ticket_id=ticket_id, message_text=result_text, sender_type="operator")
     return await send_ticket_message(ticket_id, msg, current_user, db)
 
+@router.post("/{ticket_id}/ask-environment")
+async def ask_ticket_environment(
+    ticket_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    """Sends polite environment survey questions to the customer chat."""
+    async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cursor:
+        ticket = await cursor.fetchone()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    survey_text = (
+        "👋 Чтобы специалист поддержки сразу точно определил причину и помог восстановить доступ, подскажите, пожалуйста:\n\n"
+        "1. 📱 С какого устройства подключаетесь (iPhone / Android / Windows / Mac)?\n"
+        "2. 📡 Какой у вас оператор связи или интернет (МТС, Мегафон, Билайн, Tele2, Wi-Fi, Ростелеком)?\n"
+        "3. 🧩 Какое приложение используете (Incy, Happ, Amnezia, v2rayNG, Outline)?\n\n"
+        "Можете просто написать в ответ, например: «айфон, мтс, Happ» — система автоматически зафиксирует параметры в вашем паспорте обращения."
+    )
+    msg = MessageCreate(ticket_id=ticket_id, message_text=survey_text, sender_type="ai")
+    return await send_ticket_message(ticket_id, msg, current_user, db)
+
 @router.get("/{ticket_id}/refundable-payments")
 async def get_ticket_refundable_payments(
     ticket_id: int,
