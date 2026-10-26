@@ -1,17 +1,27 @@
-import asyncpg
 import logging
-from typing import Optional
+from typing import Optional, Any
+
+try:
+    import asyncpg
+    HAS_ASYNCPG = True
+except ImportError:
+    asyncpg = None
+    HAS_ASYNCPG = False
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-_pg_pool: Optional[asyncpg.Pool] = None
+_pg_pool: Optional[Any] = None
 
 
-async def init_pg_pool() -> Optional[asyncpg.Pool]:
+async def init_pg_pool() -> Optional[Any]:
     """Initializes a read-only asyncpg connection pool to databasetop."""
     global _pg_pool
+    if not HAS_ASYNCPG:
+        logger.info("[PG Pool] asyncpg driver is not installed. Direct PostgreSQL reading disabled.")
+        return None
+
     db_url = settings.VPN_DATABASE_URL
     if not db_url:
         logger.warning("[PG Pool] VPN_DATABASE_URL is not set. Direct PostgreSQL reading disabled.")
