@@ -20,14 +20,12 @@ logger = logging.getLogger(__name__)
 class DiagnosticWizard(StatesGroup):
     choosing_device = State()
     choosing_operator = State()
-    choosing_problem = State()
     choosing_app = State()
+    choosing_problem = State()
 
-# In-memory cooldown caches (in production backed by Redis if available)
+# In-memory cooldown caches
 after_hours_cooldown: Dict[str, datetime] = {}
 auto_key_cooldown: Dict[str, datetime] = {}
-env_survey_cooldown: Dict[str, datetime] = {}
-silent_threads: set = set()
 banned_users: set = set()
 
 def is_within_work_hours_msk() -> bool:
@@ -91,15 +89,16 @@ async def save_ticket_message(ticket_id: int, sender_type: str, text: str, sende
         )
         await db.commit()
 
+# Keyboards for Multi-step Diagnostic Wizard
 def create_diagnostic_kb_device():
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="📱 iPhone / iPad", callback_data="diag_dev:iPhone"),
+            InlineKeyboardButton(text="📱 iPhone / iOS", callback_data="diag_dev:iPhone"),
             InlineKeyboardButton(text="🤖 Android", callback_data="diag_dev:Android")
         ],
         [
             InlineKeyboardButton(text="💻 Windows PC", callback_data="diag_dev:Windows"),
-            InlineKeyboardButton(text="🍎 Mac / macOS", callback_data="diag_dev:Mac")
+            InlineKeyboardButton(text="🍏 Mac / macOS", callback_data="diag_dev:Mac")
         ],
         [
             InlineKeyboardButton(text="🌐 Роутер / Другое", callback_data="diag_dev:Другое")
@@ -118,37 +117,108 @@ def create_diagnostic_kb_operator():
             InlineKeyboardButton(text="⚫ Tele2 / Т2", callback_data="diag_op:Tele2")
         ],
         [
-            InlineKeyboardButton(text="📶 Wi-Fi / Домашний", callback_data="diag_op:Wi-Fi"),
-            InlineKeyboardButton(text="🌍 Другой", callback_data="diag_op:Другой")
+            InlineKeyboardButton(text="🏠 Ростелеком", callback_data="diag_op:Ростелеком"),
+            InlineKeyboardButton(text="📶 Wi-Fi / Домашний", callback_data="diag_op:Wi-Fi")
+        ],
+        [
+            InlineKeyboardButton(text="🌍 Другой / Зарубежный", callback_data="diag_op:Другой")
         ]
-    ])
-    return kb
-
-def create_diagnostic_kb_problem():
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="❌ Не подключается", callback_data="diag_prob:Не подключается")],
-        [InlineKeyboardButton(text="🐢 Медленно / Низкая скорость", callback_data="diag_prob:Медленно")],
-        [InlineKeyboardButton(text="🚫 Не открывает конкретный сайт", callback_data="diag_prob:Не работает конкретный сайт")],
-        [InlineKeyboardButton(text="❓ Не умею установить / настроить", callback_data="diag_prob:Не умеет подключить")],
-        [InlineKeyboardButton(text="💥 Ошибка в приложении", callback_data="diag_prob:Проблема с приложением")]
     ])
     return kb
 
 def create_diagnostic_kb_app():
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="Incy", callback_data="diag_app:Incy"),
-            InlineKeyboardButton(text="Happ", callback_data="diag_app:Happ")
+            InlineKeyboardButton(text="⚡ Incy", callback_data="diag_app:Incy"),
+            InlineKeyboardButton(text="🚀 Happ", callback_data="diag_app:Happ")
         ],
         [
-            InlineKeyboardButton(text="v2rayNG", callback_data="diag_app:v2rayNG"),
-            InlineKeyboardButton(text="Outline", callback_data="diag_app:Outline")
+            InlineKeyboardButton(text="🛡️ Amnezia VPN", callback_data="diag_app:Amnezia"),
+            InlineKeyboardButton(text="📡 v2rayNG", callback_data="diag_app:v2rayNG")
         ],
         [
-            InlineKeyboardButton(text="Другое приложение", callback_data="diag_app:Другое")
+            InlineKeyboardButton(text="🔑 Outline", callback_data="diag_app:Outline"),
+            InlineKeyboardButton(text="❓ Другое / Не знаю", callback_data="diag_app:Другое")
         ]
     ])
     return kb
+
+def create_diagnostic_kb_problem():
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Не подключается / Сбой сети", callback_data="diag_prob:Не подключается")],
+        [InlineKeyboardButton(text="🐢 Медленно / Низкая скорость", callback_data="diag_prob:Медленно")],
+        [InlineKeyboardButton(text="🚫 Не открывает конкретный сайт", callback_data="diag_prob:Не работает конкретный сайт")],
+        [InlineKeyboardButton(text="📖 Не умею установить / настроить", callback_data="diag_prob:Не умеет подключить")],
+        [InlineKeyboardButton(text="💥 Ошибка или вылет приложения", callback_data="diag_prob:Проблема с приложением")]
+    ])
+    return kb
+
+def create_recommendation_action_kb(ticket_id: int):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Заработало, спасибо!", callback_data=f"solv_yes:{ticket_id}")
+        ],
+        [
+            InlineKeyboardButton(text="👤 Перевести на человека (Оператора)", callback_data=f"solv_human:{ticket_id}")
+        ]
+    ])
+
+def generate_smart_recommendation(device: str, operator: str, app: str, problem: str) -> str:
+    dev = device or "вашем устройстве"
+    op = operator or "вашей сети"
+    application = app or "VPN"
+
+    if problem == "Не умеет подключить":
+        return (
+            f"📖 <b>Пошаговая инструкция по настройке для {dev}:</b>\n\n"
+            f"1. Установите приложение <b>{application}</b> из официального магазина (App Store / Google Play).\n"
+            f"2. Запросите ваш персональный ключ в меню бота (кнопка «🔑 Получить мой ключ») и скопируйте его.\n"
+            f"3. Откройте <b>{application}</b> ➔ нажмите <i>«Добавить конфигурацию»</i> (или значок <i>«+»</i>) ➔ <i>«Импорт из буфера обмена»</i>.\n"
+            f"4. Разрешите добавление VPN-профиля в системе и нажмите большую круглую кнопку <b>«Подключить»</b>.\n\n"
+            f"<i>Выполните эти шаги. Удалось ли установить подключение?</i>"
+        )
+    elif problem == "Медленно":
+        return (
+            f"⚡ <b>Рекомендация по ускорению соединения ({dev} • {op}):</b>\n\n"
+            f"1. В приложении <b>{application}</b> откройте список серверов и переключитесь на сервер с минимальной нагрузкой: <b>NL-02</b> или <b>DE-01</b>.\n"
+            f"2. Включите на телефоне <b>«Авиарежим»</b> на 10 секунд и выключите обратно. Это сбросит радиосессию вашего оператора связи {op}.\n"
+            f"3. Если вы на мобильной сети, проверьте, не включен ли режим экономии трафика в настройках телефона.\n\n"
+            f"<i>Попробуйте переключить сервер. Скорость восстановилась?</i>"
+        )
+    elif problem == "Не работает конкретный сайт":
+        return (
+            f"🌐 <b>Рекомендация по доступу к сайтам:</b>\n\n"
+            f"1. В настройках приложения <b>{application}</b> включите опцию <i>«Удаленный DNS (Remote DNS)»</i> или смените адрес DNS на <code>8.8.8.8</code>.\n"
+            f"2. Полностью закройте вкладку в браузере, очистите кэш или откройте ресурс в режиме «Инкогнито».\n"
+            f"3. При необходимости смените сервер в приложении на резервную локацию.\n\n"
+            f"<i>Попробуйте обновить страницу. Сайт стал открываться?</i>"
+        )
+    elif problem == "Проблема с приложением":
+        return (
+            f"🛠 <b>Рекомендация по устранению сбоя {application}:</b>\n\n"
+            f"1. Полностью выгрузите <b>{application}</b> из памяти телефона (свайпом вверх) и запустите заново.\n"
+            f"2. Проверьте в App Store / Google Play наличие обновлений для <b>{application}</b>.\n"
+            f"3. При сохранении сбоев рекомендуется использовать альтернативное приложение (например, <b>Happ</b> для iOS или <b>v2rayNG</b> для Android).\n\n"
+            f"<i>Приложение работает стабильно?</i>"
+        )
+    else: # "Не подключается" / default
+        if op in ["МТС", "Мегафон", "Билайн", "Tele2"]:
+            return (
+                f"🛡️ <b>Диагностика для оператора {op} ({dev}):</b>\n\n"
+                f"В сети оператора {op} периодически фильтруются стандартные VPN-порты. Чтобы мгновенно восстановить связь:\n\n"
+                f"1. В приложении <b>{application}</b> выберите сервер с протоколом <b>Vless-Reality</b> (ноды <b>NL-02</b> или <b>DE-01</b>) — он полностью маскирует трафик под обычный веб-сайт.\n"
+                f"2. Перезагрузите сотовую вышку: включите <b>«Авиарежим»</b> на 10 секунд и выключите.\n"
+                f"3. Нажмите кнопку «Подключить» заново.\n\n"
+                f"<i>Выполните эти 3 шага. VPN подключился?</i>"
+            )
+        else:
+            return (
+                f"🛡️ <b>Диагностика соединения ({dev} • {op}):</b>\n\n"
+                f"1. Проверьте активность ключа подписки в меню бота.\n"
+                f"2. В приложении <b>{application}</b> переключитесь на сервер <b>NL-02</b> или <b>DE-01</b>.\n"
+                f"3. Перезагрузите интернет-соединение (Wi-Fi роутер или мобильную сеть).\n\n"
+                f"<i>Удалось установить соединение?</i>"
+            )
 
 # Bot Setup
 def setup_bot_dispatcher() -> Dispatcher:
@@ -158,118 +228,223 @@ def setup_bot_dispatcher() -> Dispatcher:
     async def cmd_start(message: Message, state: FSMContext):
         await state.clear()
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="❌ Не работает VPN (Диагностика)", callback_data="start_diag")],
+            [InlineKeyboardButton(text="🛠 Начать быструю диагностику", callback_data="start_diag")],
             [InlineKeyboardButton(text="🔑 Получить мой ключ", callback_data="get_my_key")],
             [InlineKeyboardButton(text="📖 Инструкция по установке", callback_data="get_guide")],
-            [InlineKeyboardButton(text="👤 Написать оператору", callback_data="talk_human")]
+            [InlineKeyboardButton(text="👤 Связаться с оператором", callback_data="talk_human")]
         ])
         await message.answer(
             f"Здравствуйте, {message.from_user.first_name or 'друг'}!\n\n"
-            "Это служба заботы и поддержки TOPBOX VPN.\n"
-            "Выберите нужный пункт или просто напишите ваш вопрос прямо в этот чат — специалисты и система поддержки уже на связи!",
+            "Вас приветствует служба заботы и поддержки <b>TOPBOX VPN</b>.\n"
+            "Чтобы мы помогли вам за 1 минуту, выберите нужный пункт или запустите кнопочную диагностику:",
+            parse_mode="HTML",
             reply_markup=kb
         )
 
-    # Diagnostic wizard flow
+    # 1. Start Wizard: Device Step
     @dp.callback_query(F.data == "start_diag")
     async def diag_start(callback: types.CallbackQuery, state: FSMContext):
         await state.set_state(DiagnosticWizard.choosing_device)
         await callback.message.edit_text(
-            "🛠 Шаг 1 из 4: На каком устройстве вы используете VPN?",
+            "🛠 <b>Шаг 1 из 4:</b> На каком устройстве вы используете VPN?",
+            parse_mode="HTML",
             reply_markup=create_diagnostic_kb_device()
         )
         await callback.answer()
 
+    # 2. Got Device -> Operator Step
     @dp.callback_query(DiagnosticWizard.choosing_device, F.data.startswith("diag_dev:"))
     async def diag_got_device(callback: types.CallbackQuery, state: FSMContext):
         dev = callback.data.split(":")[1]
         await state.update_data(device=dev)
         await state.set_state(DiagnosticWizard.choosing_operator)
         await callback.message.edit_text(
-            f"Устройство: {dev}\n\n🛠 Шаг 2 из 4: Какой у вас оператор связи / интернет?",
+            f"Устройство: <b>{dev}</b>\n\n"
+            "🛠 <b>Шаг 2 из 4:</b> Какой у вас интернет-провайдер или оператор связи?",
+            parse_mode="HTML",
             reply_markup=create_diagnostic_kb_operator()
         )
         await callback.answer()
 
+    # 3. Got Operator -> App Step
     @dp.callback_query(DiagnosticWizard.choosing_operator, F.data.startswith("diag_op:"))
     async def diag_got_operator(callback: types.CallbackQuery, state: FSMContext):
         op = callback.data.split(":")[1]
         await state.update_data(operator=op)
-        await state.set_state(DiagnosticWizard.choosing_problem)
-        data = await state.get_data()
-        await callback.message.edit_text(
-            f"Устройство: {data.get('device')}\nОператор: {op}\n\n🛠 Шаг 3 из 4: Что именно происходит?",
-            reply_markup=create_diagnostic_kb_problem()
-        )
-        await callback.answer()
-
-    @dp.callback_query(DiagnosticWizard.choosing_problem, F.data.startswith("diag_prob:"))
-    async def diag_got_problem(callback: types.CallbackQuery, state: FSMContext):
-        prob = callback.data.split(":")[1]
-        await state.update_data(problem=prob)
         await state.set_state(DiagnosticWizard.choosing_app)
         data = await state.get_data()
         await callback.message.edit_text(
-            f"Устройство: {data.get('device')}\nОператор: {data.get('operator')}\nСимптом: {prob}\n\n🛠 Шаг 4 из 4: Какое приложение используете?",
+            f"Устройство: <b>{data.get('device')}</b>\n"
+            f"Оператор: <b>{op}</b>\n\n"
+            "🛠 <b>Шаг 3 из 4:</b> Какое приложение вы используете для подключения?",
+            parse_mode="HTML",
             reply_markup=create_diagnostic_kb_app()
         )
         await callback.answer()
 
+    # 4. Got App -> Problem Step
     @dp.callback_query(DiagnosticWizard.choosing_app, F.data.startswith("diag_app:"))
-    async def diag_finished(callback: types.CallbackQuery, state: FSMContext):
+    async def diag_got_app(callback: types.CallbackQuery, state: FSMContext):
         app = callback.data.split(":")[1]
+        await state.update_data(app=app)
+        await state.set_state(DiagnosticWizard.choosing_problem)
+        data = await state.get_data()
+        await callback.message.edit_text(
+            f"Устройство: <b>{data.get('device')}</b>\n"
+            f"Оператор: <b>{data.get('operator')}</b>\n"
+            f"Приложение: <b>{app}</b>\n\n"
+            "🛠 <b>Шаг 4 из 4:</b> Что именно происходит?",
+            parse_mode="HTML",
+            reply_markup=create_diagnostic_kb_problem()
+        )
+        await callback.answer()
+
+    # 5. Finished Wizard -> Auto-Populate Passport -> Give Recommendations -> Buttons: Solved / Human
+    @dp.callback_query(DiagnosticWizard.choosing_problem, F.data.startswith("diag_prob:"))
+    async def diag_finished(callback: types.CallbackQuery, state: FSMContext):
+        prob = callback.data.split(":")[1]
         data = await state.get_data()
         await state.clear()
 
         device = data.get("device", "iPhone")
-        operator = data.get("operator", "Другой")
-        problem = data.get("problem", "Не подключается")
+        operator = data.get("operator", "МТС")
+        app = data.get("app", "Incy")
 
-        # Create or update ticket in DB with fully filled Passport!
-        ticket = await get_or_create_ticket_tg(callback.from_user, initial_text=f"Диагностика: {problem}")
+        # 1. Create or get ticket
+        ticket = await get_or_create_ticket_tg(callback.from_user, initial_text=f"Кнопочная диагностика: {prob}")
+        ticket_id = ticket["id"]
+
+        # 2. Automatically update all 7 fields of the ticket passport in database!
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
                 """
                 UPDATE tickets SET
                     category = ?,
-                    subcategory = 'диагностика',
+                    subcategory = 'кнопочный_опрос',
                     device = ?,
                     operator = ?,
                     app = ?,
                     problem = ?,
-                    cause = 'Первичная диагностика бота',
+                    cause = ?,
                     ai_triaged = 1,
-                    status = 'in_progress'
+                    status = 'in_progress',
+                    ai_diagnostic_summary = ?
                 WHERE id = ?
                 """,
-                (problem, device, operator, app, problem, ticket["id"])
+                (
+                    prob, device, operator, app, prob,
+                    f"Ограничения {operator} или сбой конфигурации",
+                    f"Кнопочный опрос бота: {device} • {operator} • {app} • {prob}",
+                    ticket_id
+                )
             )
             await db.commit()
 
-        # Recommendation logic
-        rec_text = (
-            f"📋 Результат диагностики:\n\n"
-            f"• Платформа: {device}\n"
-            f"• Оператор: {operator}\n"
-            f"• Приложение: {app}\n"
-            f"• Проблема: {problem}\n\n"
-        )
-        if operator in ["МТС", "Мегафон"] and problem == "Не подключается":
-            rec_text += (
-                "💡 Рекомендация:\n"
-                "Оператор может временно блокировать устаревшие протоколы. "
-                "Рекомендуем обновить ключ на протокол Vless или переключить сервер в настройках приложения.\n\n"
-                "Паспорт тикета уже передан оператору. Если связь не восстановилась, напишите сообщение сюда, и оператор подключится!"
-            )
-        else:
-            rec_text += (
-                "💡 Рекомендация:\n"
-                "1. Проверьте активность подписки.\n"
-                "2. Перезагрузите соединение в приложении.\n\n"
-                "Специалист поддержки уже видит ваши параметры и готов помочь!"
-            )
+        # 3. Log diagnostic summary in chat history
+        summary_log = f"🤖 <b>Паспорт обращения автозаполнен ботом:</b>\n• Устройство: {device}\n• Оператор: {operator}\n• Приложение: {app}\n• Симптом: {prob}"
+        await save_ticket_message(ticket_id, "ai", summary_log, "Бот (Автоопрос)")
 
-        await callback.message.edit_text(rec_text)
+        # 4. Generate targeted smart recommendation
+        recommendation_body = generate_smart_recommendation(device, operator, app, prob)
+        full_message = (
+            f"📋 <b>Данные зафиксированы:</b>\n"
+            f"• Платформа: <b>{device}</b>\n"
+            f"• Провайдер: <b>{operator}</b>\n"
+            f"• Приложение: <b>{app}</b>\n"
+            f"• Симптом: <b>{prob}</b>\n\n"
+            f"{recommendation_body}"
+        )
+
+        await save_ticket_message(ticket_id, "ai", full_message, "Бот (Рекомендация)")
+        await callback.message.edit_text(
+            full_message,
+            parse_mode="HTML",
+            reply_markup=create_recommendation_action_kb(ticket_id)
+        )
+        await callback.answer()
+
+    # 6. User confirms: Recommendation worked! (Решено)
+    @dp.callback_query(F.data.startswith("solv_yes:"))
+    async def cb_solved_yes(callback: types.CallbackQuery):
+        ticket_id = int(callback.data.split(":")[1])
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                """
+                UPDATE tickets SET
+                    status = 'resolved',
+                    category = 'Всё исправлено',
+                    result = 'Решено автоматической рекомендацией бота',
+                    instruction_helped = 1,
+                    resolved_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (ticket_id,)
+            )
+            await db.commit()
+
+        resolved_text = "🎉 <b>Отлично! Рады, что всё заработало.</b>\n\nВаше обращение закрыто со статусом «Решено». Если возникнут любые вопросы — мы всегда на связи!"
+        await save_ticket_message(ticket_id, "ai", "✅ Клиент подтвердил решение через рекомендацию бота.", "Бот")
+        await callback.message.edit_text(resolved_text, parse_mode="HTML")
+        await callback.answer()
+
+    # 7. User clicks: Transfer to Human Operator (Человек)
+    @dp.callback_query(F.data.startswith("solv_human:"))
+    async def cb_transfer_human(callback: types.CallbackQuery):
+        ticket_id = int(callback.data.split(":")[1])
+
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)) as cur:
+                ticket = dict(await cur.fetchone())
+
+            await db.execute(
+                """
+                UPDATE tickets SET
+                    status = 'in_progress',
+                    instruction_helped = 0
+                WHERE id = ?
+                """,
+                (ticket_id,)
+            )
+            await db.commit()
+
+        human_notice = (
+            "👤 <b>Вы переведены на дежурного специалиста поддержки!</b>\n\n"
+            f"Номер обращения: <b>#{ticket['ticket_number']}</b>\n"
+            f"• Устройство: <b>{ticket.get('device') or 'Зафиксировано'}</b>\n"
+            f"• Провайдер: <b>{ticket.get('operator') or 'Зафиксировано'}</b>\n"
+            f"• Приложение: <b>{ticket.get('app') or 'Зафиксировано'}</b>\n\n"
+            "📋 Все параметры уже переданы в систему оператору.\n"
+            "Специалист уже видит ваше обращение и подключится в течение 2–5 минут.\n"
+            "Вы можете прямо сейчас написать подробности или отправить скриншот ошибки!"
+        )
+
+        await save_ticket_message(ticket_id, "system", f"👤 Клиент переведён на человека. Параметры: {ticket.get('device')} • {ticket.get('operator')} • {ticket.get('app')}.", "Система")
+        await callback.message.edit_text(human_notice, parse_mode="HTML")
+        await callback.answer()
+
+    # Fast Action: talk_human directly
+    @dp.callback_query(F.data == "talk_human")
+    async def cb_talk_human(callback: types.CallbackQuery, state: FSMContext):
+        ticket = await get_or_create_ticket_tg(callback.from_user, initial_text="Запрос оператора")
+        # Check if environment is already known
+        if not ticket.get("device") or not ticket.get("operator"):
+            # Prompt the 4 quick buttons first so the human has data!
+            await state.set_state(DiagnosticWizard.choosing_device)
+            prompt_text = (
+                "👋 Чтобы специалист поддержки сразу знал, как вам помочь без лишних переспросов, "
+                "уточните, пожалуйста, ваше устройство и оператора (это займет 10 секунд):\n\n"
+                "🛠 <b>Шаг 1 из 4:</b> На каком устройстве вы используете VPN?"
+            )
+            await callback.message.edit_text(prompt_text, parse_mode="HTML", reply_markup=create_diagnostic_kb_device())
+        else:
+            human_text = (
+                f"👤 <b>Ваше обращение передано дежурному оператору!</b>\n\n"
+                f"Номер заявки: <b>#{ticket['ticket_number']}</b>\n"
+                f"Параметры: <b>{ticket.get('device')}</b> • <b>{ticket.get('operator')}</b> • <b>{ticket.get('app')}</b>\n\n"
+                "Специалист уже на связи и ответит вам прямо в этот чат!"
+            )
+            await callback.message.edit_text(human_text, parse_mode="HTML")
         await callback.answer()
 
     # Fast callback buttons
@@ -282,34 +457,34 @@ def setup_bot_dispatcher() -> Dispatcher:
             if keys:
                 k = keys[0]
                 text = (
-                    f"🔑 Ваш действующий ключ VPN:\n\n"
-                    f"`{k['key_string']}`\n\n"
+                    f"🔑 <b>Ваша действующая VPN-подписка:</b>\n\n"
+                    f"Ссылка / ключ:\n`{k['key_string']}`\n\n"
                     f"• Сервер: {k['server']}\n"
                     f"• Протокол: {k['protocol']}\n"
                     f"• Статус: {k['subscription_status']}\n\n"
-                    f"Вставьте этот ключ в приложение Incy / Happ / V2RayTun / Outline."
+                    f"Скопируйте ключ и вставьте в приложение Incy / Happ / Amnezia."
                 )
             else:
-                text = "Для вашего Telegram ID не найдено активных ключей. Напишите нам сообщение, и оператор проверит ваши подписки."
-        await callback.message.answer(text)
+                text = "Для вашего Telegram ID не найдено активных ключей. Вы можете приобрести подписку или написать оператору."
+        await callback.message.answer(text, parse_mode="HTML")
         await callback.answer()
 
     @dp.callback_query(F.data == "get_guide")
     async def cb_get_guide(callback: types.CallbackQuery):
         guide = (
-            "📖 Как подключить TOPBOX VPN:\n\n"
-            "1. Установите приложение Incy или Happ (из App Store / Google Play).\n"
+            "📖 <b>Как подключить TOPBOX VPN:</b>\n\n"
+            "1. Установите приложение <b>Incy</b> или <b>Happ</b> (из App Store / Google Play).\n"
             "2. Скопируйте ваш ключ (кнопка «🔑 Получить мой ключ»).\n"
             "3. Откройте приложение ➔ выберите «Добавить ключ из буфера обмена».\n"
             "4. Нажмите «Подключить»!\n\n"
-            "Если что-то не получается — напишите в чат, оператор на связи."
+            "Если что-то не получается — нажмите «🛠 Быстрая диагностика»!"
         )
-        await callback.message.answer(guide)
+        await callback.message.answer(guide, parse_mode="HTML")
         await callback.answer()
 
     # Handling incoming client messages
     @dp.message()
-    async def handle_client_message(message: Message):
+    async def handle_client_message(message: Message, state: FSMContext):
         user_id_str = str(message.from_user.id)
         if user_id_str in banned_users:
             return
@@ -345,90 +520,23 @@ def setup_bot_dispatcher() -> Dispatcher:
                     if keys:
                         k = keys[0]
                         auto_key_reply = (
-                            f"🤖 Автоответ по запросу ключа:\n\n"
+                            f"🤖 <b>Автоответ по запросу ключа:</b>\n\n"
                             f"Ваш активный ключ:\n`{k['key_string']}`\n\n"
                             f"Сервер: {k['server']} | Протокол: {k['protocol']}\n"
                             f"Срок: до {k['expires_at'] or 'активен'}"
                         )
-                        await message.answer(auto_key_reply)
+                        await message.answer(auto_key_reply, parse_mode="HTML")
                         await save_ticket_message(ticket["id"], "ai", auto_key_reply, "AI Auto-Key")
 
-        # 4. Smart Environment Survey & Auto-Triage:
-        # Bot asks for environment if missing, parses answer, and auto-populates Passport!
-        from app.ai.triage import auto_triage_ticket
-        env_missing_before = not ticket.get("device") or not ticket.get("operator")
-
-        # Fetch recent customer messages for context
-        async with aiosqlite.connect(DB_PATH) as db:
-            db.row_factory = aiosqlite.Row
-            async with db.execute(
-                "SELECT message_text FROM ticket_messages WHERE ticket_id = ? AND sender_type = 'client' ORDER BY id ASC",
-                (ticket["id"],)
-            ) as cur:
-                client_msgs = [r["message_text"] for r in await cur.fetchall() if r["message_text"]]
-
-        triage_res = await auto_triage_ticket(client_msgs or [text])
-
-        # Automatically update ticket passport with extracted data
-        async with aiosqlite.connect(DB_PATH) as db:
-            await db.execute(
-                """
-                UPDATE tickets SET
-                    category = COALESCE(?, category),
-                    subcategory = COALESCE(?, subcategory),
-                    device = COALESCE(?, device),
-                    operator = COALESCE(?, operator),
-                    app = COALESCE(?, app),
-                    cause = COALESCE(?, cause),
-                    severity = COALESCE(?, severity),
-                    ai_triaged = 1,
-                    ai_diagnostic_summary = ?,
-                    ai_confidence = ?
-                WHERE id = ?
-                """,
-                (
-                    triage_res.category, triage_res.subcategory,
-                    triage_res.device, triage_res.operator, triage_res.app,
-                    triage_res.cause, triage_res.severity,
-                    triage_res.diagnostic_summary, triage_res.confidence,
-                    ticket["id"]
-                )
+        # 4. If environment is NOT YET collected, offer the friendly buttons wizard!
+        current_state = await state.get_state()
+        if not ticket.get("device") and not current_state:
+            await state.set_state(DiagnosticWizard.choosing_device)
+            welcome_survey = (
+                "👋 Чтобы быстро определить причину неполадки и сразу дать точную рекомендацию, "
+                "ответьте на 3 быстрых вопроса кнопками внизу:\n\n"
+                "🛠 <b>Шаг 1 из 4:</b> На каком устройстве вы используете VPN?"
             )
-            await db.commit()
-
-        # If environment is STILL not known after triage, bot automatically asks the customer!
-        env_still_missing = (not ticket.get("device") and not triage_res.device) or (not ticket.get("operator") and not triage_res.operator)
-        if env_still_missing:
-            now = datetime.now(timezone.utc)
-            last_survey = env_survey_cooldown.get(user_id_str)
-            if not last_survey or (now - last_survey) > timedelta(minutes=15):
-                env_survey_cooldown[user_id_str] = now
-                survey_kb = InlineKeyboardMarkup(inline_keyboard=[
-                    [
-                        InlineKeyboardButton(text="📱 iPhone / iOS", callback_data="diag_dev:iPhone"),
-                        InlineKeyboardButton(text="🤖 Android", callback_data="diag_dev:Android")
-                    ],
-                    [
-                        InlineKeyboardButton(text="💻 Windows PC", callback_data="diag_dev:Windows"),
-                        InlineKeyboardButton(text="🍎 Mac / macOS", callback_data="diag_dev:Mac")
-                    ]
-                ])
-                survey_text = (
-                    "👋 Чтобы мы сразу определили причину и помогли восстановить доступ, уточните, пожалуйста:\n\n"
-                    "1. 📱 <b>С какого устройства</b> вы подключаетесь?\n"
-                    "2. 📡 <b>Какой у вас оператор связи</b> или интернет (МТС, Мегафон, Билайн, Tele2, Wi-Fi, Ростелеком)?\n"
-                    "3. 🧩 <b>Какое приложение</b> установлено (Incy, Happ, Amnezia, v2rayNG, Outline)?\n\n"
-                    "<i>(Можете выбрать кнопку внизу или просто написать в ответ, например: «айфон, мтс, Happ»)</i>"
-                )
-                await message.answer(survey_text, parse_mode="HTML", reply_markup=survey_kb)
-                await save_ticket_message(ticket["id"], "ai", survey_text, "Бот (Опрос окружения)")
-        elif env_missing_before and (triage_res.device or triage_res.operator):
-            # Client provided their environment! Confirm and notify
-            ack_dev = triage_res.device or ticket.get("device") or "устройство"
-            ack_op = triage_res.operator or ticket.get("operator") or "сеть"
-            ack_app = triage_res.app or ticket.get("app") or "VPN"
-            ack_text = f"✅ Спасибо! Зафиксировали параметры: <b>{ack_dev}</b> • <b>{ack_op}</b> • <b>{ack_app}</b>.\nСпециалист поддержки уже видит ваши данные в системе и помогает в решении вопроса."
-            await message.answer(ack_text, parse_mode="HTML")
-            await save_ticket_message(ticket["id"], "ai", ack_text, "Бот (Параметры зафиксированы)")
+            await message.answer(welcome_survey, parse_mode="HTML", reply_markup=create_diagnostic_kb_device())
 
     return dp
